@@ -4,6 +4,7 @@ import BadgeTag from "@/components/atoms/BadgeTag";
 import StarRating from "@/components/atoms/StarRating";
 import PrimaryButton from "@/components/atoms/PrimaryButton";
 import type { Teacher } from "@/data/mockData";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface TeacherCardProps {
   teacher: Teacher;
@@ -11,6 +12,7 @@ interface TeacherCardProps {
 
 export default function TeacherCard({ teacher }: TeacherCardProps) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   return (
     <div
@@ -22,7 +24,7 @@ export default function TeacherCard({ teacher }: TeacherCardProps) {
         <div className="flex-1 min-w-0">
           <h3 className="text-lg font-bold text-[#1A1A2E] truncate">{teacher.name}</h3>
           <StarRating rating={teacher.rating} />
-          <p className="text-sm text-gray-500 mt-1">{teacher.reviewsCount} تقييم</p>
+          <p className="text-sm text-gray-500 mt-1">{teacher.reviewsCount} {t("teacher.reviews")}</p>
         </div>
       </div>
 
@@ -37,16 +39,16 @@ export default function TeacherCard({ teacher }: TeacherCardProps) {
       <div className="flex items-center justify-between">
         <div>
           <span className="text-lg font-bold text-[#2F7A5B]">${teacher.hourlyRate}</span>
-          <span className="text-sm text-gray-500"> / ساعة</span>
+          <span className="text-sm text-gray-500"> {t("teacher.perHour")}</span>
         </div>
         <div className="text-sm text-gray-500">
-          {teacher.experience} سنة خبرة
+          {teacher.experience} {t("teacher.yearsExp")}
         </div>
       </div>
 
       <div className="mt-4">
         <PrimaryButton className="w-full" onClick={(e) => { e.stopPropagation(); navigate(`/teacher/${teacher.id}`); }}>
-          احجز الآن
+          {t("teacher.bookNow")}
         </PrimaryButton>
       </div>
     </div>

@@ -1,6 +1,9 @@
 import PrimaryButton from "@/components/atoms/PrimaryButton";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 export default function HeroSection() {
+  const { t } = useLanguage();
+
   const scrollToTeachers = () => {
     const el = document.getElementById("teachers");
     if (el) el.scrollIntoView({ behavior: "smooth" });
@@ -19,13 +22,13 @@ export default function HeroSection() {
       <div className="absolute inset-0 bg-[#1A1A2E]/75" />
       <div className="relative z-10 max-w-3xl mx-auto px-4 py-16">
         <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-6 leading-tight">
-          تعلّم القرآن والعربية مع أفضل المعلمين
+          {t("hero.title")}
         </h1>
         <p className="text-lg md:text-xl text-gray-200 mb-8 leading-relaxed">
-          منصة متكاملة تربطك بأفضل معلمي القرآن الكريم واللغة العربية والدراسات الإسلامية
+          {t("hero.subtitle")}
         </p>
         <PrimaryButton onClick={scrollToTeachers} className="text-lg px-8 py-3">
-          تصفح المعلمين
+          {t("hero.cta")}
         </PrimaryButton>
       </div>
     </section>

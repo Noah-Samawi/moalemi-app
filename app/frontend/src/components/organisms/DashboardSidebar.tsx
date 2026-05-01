@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { BookOpen, History, Settings, ChevronRight, ChevronLeft } from "lucide-react";
 import AvatarAtom from "@/components/atoms/AvatarAtom";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface DashboardSidebarProps {
   userName?: string;
@@ -9,31 +10,34 @@ interface DashboardSidebarProps {
   onTabChange?: (tab: string) => void;
 }
 
-const navItems = [
-  { id: "upcoming", label: "الدروس القادمة", icon: BookOpen },
-  { id: "history", label: "سجل الدروس", icon: History },
-  { id: "settings", label: "الإعدادات", icon: Settings },
-];
-
 export default function DashboardSidebar({
-  userName = "مستخدم",
+  userName,
   userAvatar = "https://mgx-backend-cdn.metadl.com/generate/images/1176546/2026-05-01/nwmpgyqaafla/teacher-avatar-1.png",
   activeTab = "upcoming",
   onTabChange,
 }: DashboardSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const { t, dir } = useLanguage();
+
+  const navItems = [
+    { id: "upcoming", label: t("dashboard.upcoming"), icon: BookOpen },
+    { id: "history", label: t("dashboard.history"), icon: History },
+    { id: "settings", label: t("dashboard.settings"), icon: Settings },
+  ];
+
+  const displayName = userName || t("dashboard.user");
 
   return (
     <aside
-      className={`hidden lg:flex flex-col bg-white border-l border-gray-200 h-[calc(100vh-4rem)] sticky top-16 transition-all duration-300 ${
+      className={`hidden lg:flex flex-col bg-white ${dir === "rtl" ? "border-l" : "border-r"} border-gray-200 h-[calc(100vh-4rem)] sticky top-16 transition-all duration-300 ${
         collapsed ? "w-20" : "w-64"
       }`}
     >
       <div className="p-4 border-b border-gray-100">
         <div className="flex items-center gap-3">
-          <AvatarAtom src={userAvatar} alt={userName} size="sm" />
+          <AvatarAtom src={userAvatar} alt={displayName} size="sm" />
           {!collapsed && (
-            <span className="font-semibold text-[#1A1A2E] truncate">{userName}</span>
+            <span className="font-semibold text-[#1A1A2E] truncate">{displayName}</span>
           )}
         </div>
       </div>
@@ -63,7 +67,11 @@ export default function DashboardSidebar({
         onClick={() => setCollapsed(!collapsed)}
         className="p-3 border-t border-gray-100 text-gray-400 hover:text-gray-600 flex items-center justify-center"
       >
-        {collapsed ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+        {collapsed ? (
+          dir === "rtl" ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />
+        ) : (
+          dir === "rtl" ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />
+        )}
       </button>
     </aside>
   );

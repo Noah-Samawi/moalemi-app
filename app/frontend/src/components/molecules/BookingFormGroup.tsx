@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import PrimaryButton from "@/components/atoms/PrimaryButton";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface BookingFormGroupProps {
   hourlyRate: number;
@@ -25,28 +26,36 @@ export interface BookingData {
   totalPrice: number;
 }
 
-function generateTimeOptions(): { value: string; label: string }[] {
+function generateTimeOptions(lang: string): { value: string; label: string }[] {
   const options: { value: string; label: string }[] = [];
   for (let hour = 8; hour <= 22; hour++) {
     for (let min = 0; min < 60; min += 30) {
       const h24 = `${hour.toString().padStart(2, "0")}:${min.toString().padStart(2, "0")}`;
-      const period = hour < 12 ? "ص" : "م";
-      const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-      const label = `${displayHour}:${min.toString().padStart(2, "0")} ${period}`;
-      options.push({ value: h24, label });
+      if (lang === "ar") {
+        const period = hour < 12 ? "ص" : "م";
+        const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+        const label = `${displayHour}:${min.toString().padStart(2, "0")} ${period}`;
+        options.push({ value: h24, label });
+      } else {
+        const period = hour < 12 ? "AM" : "PM";
+        const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+        const label = `${displayHour}:${min.toString().padStart(2, "0")} ${period}`;
+        options.push({ value: h24, label });
+      }
     }
   }
   return options;
 }
 
-const timeOptions = generateTimeOptions();
-
 export default function BookingFormGroup({ hourlyRate, onConfirm }: BookingFormGroupProps) {
+  const { t, lang } = useLanguage();
   const [selectedDate, setSelectedDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [userName, setUserName] = useState("");
   const [notes, setNotes] = useState("");
+
+  const timeOptions = generateTimeOptions(lang);
 
   const calculateTotalPrice = (): number => {
     if (!startTime || !endTime) return 0;
@@ -76,7 +85,7 @@ export default function BookingFormGroup({ hourlyRate, onConfirm }: BookingFormG
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="booking-date">التاريخ</Label>
+        <Label htmlFor="booking-date">{t("booking.date")}</Label>
         <Input
           id="booking-date"
           type="date"
@@ -88,10 +97,10 @@ export default function BookingFormGroup({ hourlyRate, onConfirm }: BookingFormG
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label>وقت البداية</Label>
+          <Label>{t("booking.startTime")}</Label>
           <Select value={startTime} onValueChange={setStartTime}>
             <SelectTrigger>
-              <SelectValue placeholder="اختر الوقت" />
+              <SelectValue placeholder={t("booking.selectTime")} />
             </SelectTrigger>
             <SelectContent>
               {timeOptions.map((opt) => (
@@ -104,10 +113,10 @@ export default function BookingFormGroup({ hourlyRate, onConfirm }: BookingFormG
         </div>
 
         <div className="space-y-2">
-          <Label>وقت النهاية</Label>
+          <Label>{t("booking.endTime")}</Label>
           <Select value={endTime} onValueChange={setEndTime}>
             <SelectTrigger>
-              <SelectValue placeholder="اختر الوقت" />
+              <SelectValue placeholder={t("booking.selectTime")} />
             </SelectTrigger>
             <SelectContent>
               {timeOptions
@@ -123,20 +132,20 @@ export default function BookingFormGroup({ hourlyRate, onConfirm }: BookingFormG
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="booking-name">الاسم</Label>
+        <Label htmlFor="booking-name">{t("booking.name")}</Label>
         <Input
           id="booking-name"
-          placeholder="أدخل اسمك"
+          placeholder={t("booking.namePlaceholder")}
           value={userName}
           onChange={(e) => setUserName(e.target.value)}
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="booking-notes">ملاحظات</Label>
+        <Label htmlFor="booking-notes">{t("booking.notes")}</Label>
         <Textarea
           id="booking-notes"
-          placeholder="أضف ملاحظاتك هنا..."
+          placeholder={t("booking.notesPlaceholder")}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={3}
@@ -145,7 +154,7 @@ export default function BookingFormGroup({ hourlyRate, onConfirm }: BookingFormG
 
       {totalPrice > 0 && (
         <div className="bg-[#FDF8F0] rounded-lg p-4 text-center">
-          <p className="text-sm text-gray-600 mb-1">السعر الإجمالي</p>
+          <p className="text-sm text-gray-600 mb-1">{t("booking.totalPrice")}</p>
           <p className="text-2xl font-bold text-[#2F7A5B]">${totalPrice.toFixed(2)}</p>
         </div>
       )}
@@ -155,7 +164,7 @@ export default function BookingFormGroup({ hourlyRate, onConfirm }: BookingFormG
         onClick={handleConfirm}
         disabled={!selectedDate || !startTime || !endTime || !userName}
       >
-        تأكيد الحجز
+        {t("booking.confirm")}
       </PrimaryButton>
     </div>
   );

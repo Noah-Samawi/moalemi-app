@@ -1,14 +1,29 @@
+import { useState } from "react";
 import AvatarAtom from "@/components/atoms/AvatarAtom";
 import StarRating from "@/components/atoms/StarRating";
 import BadgeTag from "@/components/atoms/BadgeTag";
 import BookingFormGroup from "@/components/molecules/BookingFormGroup";
+import BookingConfirmationToast from "@/components/molecules/BookingConfirmationToast";
+import { useLanguage } from "@/i18n/LanguageContext";
 import type { Teacher } from "@/data/mockData";
 
 interface TeacherProfileBookingProps {
   teacher: Teacher;
 }
 
+interface BookingConfirmation {
+  teacherName: string;
+  selectedDate: string;
+  startTime: string;
+  endTime: string;
+  userName: string;
+  totalPrice: number;
+}
+
 export default function TeacherProfileBooking({ teacher }: TeacherProfileBookingProps) {
+  const { t } = useLanguage();
+  const [confirmation, setConfirmation] = useState<BookingConfirmation | null>(null);
+
   const handleBookingConfirm = (data: {
     selectedDate: string;
     startTime: string;
@@ -17,7 +32,14 @@ export default function TeacherProfileBooking({ teacher }: TeacherProfileBooking
     notes: string;
     totalPrice: number;
   }) => {
-    alert(`تم تأكيد الحجز!\nالمعلم: ${teacher.name}\nالتاريخ: ${data.selectedDate}\nالوقت: ${data.startTime} - ${data.endTime}\nالاسم: ${data.userName}\nالسعر: $${data.totalPrice.toFixed(2)}`);
+    setConfirmation({
+      teacherName: teacher.name,
+      selectedDate: data.selectedDate,
+      startTime: data.startTime,
+      endTime: data.endTime,
+      userName: data.userName,
+      totalPrice: data.totalPrice,
+    });
   };
 
   return (
@@ -30,7 +52,7 @@ export default function TeacherProfileBooking({ teacher }: TeacherProfileBooking
             <div>
               <h1 className="text-2xl font-bold text-[#1A1A2E]">{teacher.name}</h1>
               <StarRating rating={teacher.rating} />
-              <p className="text-sm text-gray-500 mt-1">{teacher.reviewsCount} تقييم</p>
+              <p className="text-sm text-gray-500 mt-1">{teacher.reviewsCount} {t("teacher.reviews")}</p>
             </div>
           </div>
 
@@ -41,17 +63,17 @@ export default function TeacherProfileBooking({ teacher }: TeacherProfileBooking
           </div>
 
           <div className="flex items-center gap-6 text-sm text-gray-600">
-            <span className="font-semibold">{teacher.experience} سنة خبرة</span>
-            <span className="font-bold text-[#2F7A5B] text-lg">${teacher.hourlyRate}/ساعة</span>
+            <span className="font-semibold">{teacher.experience} {t("teacher.yearsExp")}</span>
+            <span className="font-bold text-[#2F7A5B] text-lg">${teacher.hourlyRate}{t("profile.perHour")}</span>
           </div>
 
           <div>
-            <h2 className="text-lg font-bold text-[#1A1A2E] mb-2">نبذة عن المعلم</h2>
+            <h2 className="text-lg font-bold text-[#1A1A2E] mb-2">{t("profile.about")}</h2>
             <p className="text-gray-600 leading-relaxed">{teacher.bio}</p>
           </div>
 
           <div>
-            <h2 className="text-lg font-bold text-[#1A1A2E] mb-4">الخدمات</h2>
+            <h2 className="text-lg font-bold text-[#1A1A2E] mb-4">{t("profile.services")}</h2>
             <div className="space-y-4">
               {teacher.services.map((service) => (
                 <div
@@ -71,7 +93,7 @@ export default function TeacherProfileBooking({ teacher }: TeacherProfileBooking
         {/* Booking Section */}
         <div className="lg:col-span-2">
           <div className="bg-white rounded-xl shadow-md p-6 sticky top-24">
-            <h2 className="text-lg font-bold text-[#1A1A2E] mb-4">احجز درساً</h2>
+            <h2 className="text-lg font-bold text-[#1A1A2E] mb-4">{t("booking.title")}</h2>
             <BookingFormGroup
               hourlyRate={teacher.hourlyRate}
               onConfirm={handleBookingConfirm}
@@ -79,6 +101,13 @@ export default function TeacherProfileBooking({ teacher }: TeacherProfileBooking
           </div>
         </div>
       </div>
+
+      {/* Booking Confirmation Toast */}
+      <BookingConfirmationToast
+        open={confirmation !== null}
+        onClose={() => setConfirmation(null)}
+        data={confirmation}
+      />
     </div>
   );
 }

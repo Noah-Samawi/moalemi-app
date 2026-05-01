@@ -3,10 +3,12 @@ import Navbar from "@/components/organisms/Navbar";
 import DashboardSidebar from "@/components/organisms/DashboardSidebar";
 import PrimaryButton from "@/components/atoms/PrimaryButton";
 import { upcomingLessons } from "@/data/mockData";
+import { useLanguage } from "@/i18n/LanguageContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("upcoming");
+  const { t, dir } = useLanguage();
 
   const studentLessons = upcomingLessons.filter((l) => l.role === "student");
   const teacherLessons = upcomingLessons.filter((l) => l.role === "teacher");
@@ -19,14 +21,14 @@ export default function Dashboard() {
       <div className="space-y-1">
         <p className="font-bold text-[#1A1A2E]">{lesson.subject}</p>
         <p className="text-sm text-gray-600">
-          {lesson.role === "student" ? "المعلم" : "الطالب"}:{" "}
+          {lesson.role === "student" ? t("dashboard.teacher") : t("dashboard.student")}:{" "}
           {lesson.role === "student" ? lesson.teacherName : lesson.studentName}
         </p>
         <p className="text-sm text-gray-500">
           {lesson.date} • {lesson.time} • {lesson.duration}
         </p>
       </div>
-      <PrimaryButton className="self-start sm:self-center">انضم للدرس</PrimaryButton>
+      <PrimaryButton className="self-start sm:self-center">{t("dashboard.joinLesson")}</PrimaryButton>
     </div>
   );
 
@@ -37,12 +39,12 @@ export default function Dashboard() {
         <DashboardSidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
         <main className="flex-1 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 className="text-2xl font-bold text-[#1A1A2E] mb-6">لوحة التحكم</h1>
+          <h1 className="text-2xl font-bold text-[#1A1A2E] mb-6">{t("dashboard.title")}</h1>
 
-          <Tabs defaultValue="student" dir="rtl">
+          <Tabs defaultValue="student" dir={dir}>
             <TabsList className="mb-6">
-              <TabsTrigger value="student">طالب</TabsTrigger>
-              <TabsTrigger value="teacher">معلم</TabsTrigger>
+              <TabsTrigger value="student">{t("dashboard.student")}</TabsTrigger>
+              <TabsTrigger value="teacher">{t("dashboard.teacher")}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="student">
@@ -50,7 +52,7 @@ export default function Dashboard() {
                 {studentLessons.length > 0 ? (
                   studentLessons.map(renderLessonCard)
                 ) : (
-                  <p className="text-gray-500 text-center py-8">لا توجد دروس قادمة</p>
+                  <p className="text-gray-500 text-center py-8">{t("dashboard.noLessons")}</p>
                 )}
               </div>
             </TabsContent>
@@ -60,7 +62,7 @@ export default function Dashboard() {
                 {teacherLessons.length > 0 ? (
                   teacherLessons.map(renderLessonCard)
                 ) : (
-                  <p className="text-gray-500 text-center py-8">لا توجد دروس قادمة</p>
+                  <p className="text-gray-500 text-center py-8">{t("dashboard.noLessons")}</p>
                 )}
               </div>
             </TabsContent>

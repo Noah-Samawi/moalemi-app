@@ -2,11 +2,13 @@ import Navbar from "@/components/organisms/Navbar";
 import HeroSection from "@/components/organisms/HeroSection";
 import FeaturedTeachersGrid from "@/components/organisms/FeaturedTeachersGrid";
 import FeatureItem from "@/components/molecules/FeatureItem";
-import PrimaryButton from "@/components/atoms/PrimaryButton";
 import SecondaryButton from "@/components/atoms/SecondaryButton";
 import { features } from "@/data/mockData";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 export default function Index() {
+  const { t } = useLanguage();
+
   return (
     <div className="min-h-screen">
       <Navbar />
@@ -16,7 +18,7 @@ export default function Index() {
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-center text-[#1A1A2E] mb-12">
-            لماذا معلمي؟
+            {t("features.title")}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature) => (
@@ -45,19 +47,19 @@ export default function Index() {
       >
         <div className="absolute inset-0 bg-[#1A1A2E]/70" />
         <div className="relative z-10 max-w-2xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-white mb-4">انضم كمعلم</h2>
+          <h2 className="text-3xl font-bold text-white mb-4">{t("cta.title")}</h2>
           <p className="text-lg text-gray-200 mb-8">
-            شارك علمك وانضم لفريق المعلمين
+            {t("cta.subtitle")}
           </p>
           <SecondaryButton className="text-lg px-8 py-3 border-white text-white hover:bg-white hover:text-[#1A1A2E]">
-            سجّل كمعلم
+            {t("cta.button")}
           </SecondaryButton>
         </div>
       </section>
 
       {/* Footer */}
       <footer className="bg-[#1A1A2E] text-gray-400 py-8 text-center">
-        <p className="text-sm">© {new Date().getFullYear()} معلمي. جميع الحقوق محفوظة.</p>
+        <p className="text-sm">© {new Date().getFullYear()} معلمي. {t("footer.rights")}</p>
       </footer>
     </div>
   );

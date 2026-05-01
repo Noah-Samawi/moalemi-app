@@ -100,10 +100,10 @@ export const teachers: Teacher[] = [
 ];
 
 export const features: Feature[] = [
-  { icon: "Users", title: "دروس فردية", subtitle: "تعلم بشكل فردي مع معلم مخصص يركز على احتياجاتك" },
-  { icon: "Clock", title: "مرونة في المواعيد", subtitle: "اختر الوقت المناسب لك من بين مواعيد متعددة" },
-  { icon: "Star", title: "معلمون معتمدون", subtitle: "جميع معلمينا معتمدون وذوو خبرة عالية" },
-  { icon: "Video", title: "دروس مباشرة", subtitle: "جلسات تفاعلية مباشرة عبر الإنترنت" },
+  { icon: "Users", title: "features.individual.title", subtitle: "features.individual.subtitle" },
+  { icon: "Clock", title: "features.flexibility.title", subtitle: "features.flexibility.subtitle" },
+  { icon: "Star", title: "features.certified.title", subtitle: "features.certified.subtitle" },
+  { icon: "Video", title: "features.live.title", subtitle: "features.live.subtitle" },
 ];
 
 export const upcomingLessons: UpcomingLesson[] = [
