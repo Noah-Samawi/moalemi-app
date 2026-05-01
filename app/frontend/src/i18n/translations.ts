@@ -43,7 +43,10 @@ export const translations: Record<Language, Record<string, string>> = {
     // Footer
     "footer.rights": "جميع الحقوق محفوظة",
 
-    // Auth Modal
+    // Brand
+    "brand.name": "معلمي",
+
+    // Auth
     "auth.login": "تسجيل الدخول",
     "auth.register": "إنشاء حساب",
     "auth.email": "البريد الإلكتروني",
@@ -60,6 +63,11 @@ export const translations: Record<Language, Record<string, string>> = {
     "auth.registerSuccess": "تم إنشاء الحساب بنجاح!",
     "auth.fillAll": "يرجى ملء جميع الحقول",
     "auth.passwordMismatch": "كلمات المرور غير متطابقة",
+    "auth.loginRequiredTitle": "تسجيل الدخول مطلوب",
+    "auth.loginRequired": "يجب تسجيل الدخول لحجز موعد",
+
+    // CTA Success
+    "cta.teacherRegisterSuccess": "تم إرسال طلبك للإدارة للمراجعة",
 
     // Booking
     "booking.title": "احجز درساً",
@@ -121,7 +129,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "hero.cta": "Lehrer durchsuchen",
 
     // Features
-    "features.title": "Warum معلمي؟",
+    "features.title": "Warum Mein Lehrer?",
     "features.individual.title": "Einzelunterricht",
     "features.individual.subtitle": "Lernen Sie individuell mit einem Lehrer, der sich auf Ihre Bedürfnisse konzentriert",
     "features.flexibility.title": "Flexible Zeiten",
@@ -148,7 +156,10 @@ export const translations: Record<Language, Record<string, string>> = {
     // Footer
     "footer.rights": "Alle Rechte vorbehalten",
 
-    // Auth Modal
+    // Brand
+    "brand.name": "Mein Lehrer",
+
+    // Auth
     "auth.login": "Anmelden",
     "auth.register": "Registrieren",
     "auth.email": "E-Mail",
@@ -165,6 +176,11 @@ export const translations: Record<Language, Record<string, string>> = {
     "auth.registerSuccess": "Konto erfolgreich erstellt!",
     "auth.fillAll": "Bitte füllen Sie alle Felder aus",
     "auth.passwordMismatch": "Passwörter stimmen nicht überein",
+    "auth.loginRequiredTitle": "Anmeldung erforderlich",
+    "auth.loginRequired": "Sie müssen sich anmelden, um einen Termin zu buchen",
+
+    // CTA Success
+    "cta.teacherRegisterSuccess": "Ihre Bewerbung wurde zur Überprüfung an den Administrator gesendet.",
 
     // Booking
     "booking.title": "Stunde buchen",

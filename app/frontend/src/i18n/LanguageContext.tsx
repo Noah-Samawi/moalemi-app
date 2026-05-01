@@ -7,12 +7,18 @@ interface LanguageContextType {
   t: (key: string) => string;
   toggleLanguage: () => void;
   setLanguage: (lang: Language) => void;
+  isAuthenticated: boolean;
+  userName: string | null;
+  login: (name: string) => void;
+  logout: () => void;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLang] = useState<Language>("ar");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userName, setUserName] = useState<string | null>(null);
 
   const dir = lang === "ar" ? "rtl" : "ltr";
 
@@ -31,8 +37,18 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     setLang(newLang);
   }, []);
 
+  const login = useCallback((name: string) => {
+    setIsAuthenticated(true);
+    setUserName(name);
+  }, []);
+
+  const logout = useCallback(() => {
+    setIsAuthenticated(false);
+    setUserName(null);
+  }, []);
+
   return (
-    <LanguageContext.Provider value={{ lang, dir, t, toggleLanguage, setLanguage }}>
+    <LanguageContext.Provider value={{ lang, dir, t, toggleLanguage, setLanguage, isAuthenticated, userName, login, logout }}>
       {children}
     </LanguageContext.Provider>
   );

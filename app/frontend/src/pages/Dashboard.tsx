@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("upcoming");
-  const { t, dir } = useLanguage();
+  const { t, dir, lang } = useLanguage();
 
   const studentLessons = upcomingLessons.filter((l) => l.role === "student");
   const teacherLessons = upcomingLessons.filter((l) => l.role === "teacher");
@@ -19,13 +19,13 @@ export default function Dashboard() {
       className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
     >
       <div className="space-y-1">
-        <p className="font-bold text-[#1A1A2E]">{lesson.subject}</p>
+        <p className="font-bold text-[#1A1A2E]">{lesson.subject[lang]}</p>
         <p className="text-sm text-gray-600">
           {lesson.role === "student" ? t("dashboard.teacher") : t("dashboard.student")}:{" "}
-          {lesson.role === "student" ? lesson.teacherName : lesson.studentName}
+          {lesson.role === "student" ? lesson.teacherName[lang] : lesson.studentName[lang]}
         </p>
         <p className="text-sm text-gray-500">
-          {lesson.date} • {lesson.time} • {lesson.duration}
+          {lesson.date} • {lesson.time} • {lesson.duration[lang]}
         </p>
       </div>
       <PrimaryButton className="self-start sm:self-center">{t("dashboard.joinLesson")}</PrimaryButton>

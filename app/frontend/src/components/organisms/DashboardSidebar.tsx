@@ -11,13 +11,13 @@ interface DashboardSidebarProps {
 }
 
 export default function DashboardSidebar({
-  userName,
+  userName: userNameProp,
   userAvatar = "https://mgx-backend-cdn.metadl.com/generate/images/1176546/2026-05-01/nwmpgyqaafla/teacher-avatar-1.png",
   activeTab = "upcoming",
   onTabChange,
 }: DashboardSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const { t, dir } = useLanguage();
+  const { t, dir, isAuthenticated, userName: contextUserName } = useLanguage();
 
   const navItems = [
     { id: "upcoming", label: t("dashboard.upcoming"), icon: BookOpen },
@@ -25,7 +25,7 @@ export default function DashboardSidebar({
     { id: "settings", label: t("dashboard.settings"), icon: Settings },
   ];
 
-  const displayName = userName || t("dashboard.user");
+  const displayName = contextUserName || userNameProp || t("dashboard.user");
 
   return (
     <aside

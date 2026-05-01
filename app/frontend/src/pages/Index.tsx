@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import Navbar from "@/components/organisms/Navbar";
 import HeroSection from "@/components/organisms/HeroSection";
 import FeaturedTeachersGrid from "@/components/organisms/FeaturedTeachersGrid";
@@ -7,7 +8,18 @@ import { features } from "@/data/mockData";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 export default function Index() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const [showTeacherToast, setShowTeacherToast] = useState(false);
+
+  const handleJoinAsTeacher = () => {
+    setShowTeacherToast(true);
+  };
+
+  useEffect(() => {
+    if (!showTeacherToast) return;
+    const timer = setTimeout(() => setShowTeacherToast(false), 3000);
+    return () => clearTimeout(timer);
+  }, [showTeacherToast]);
 
   return (
     <div className="min-h-screen">
@@ -51,15 +63,37 @@ export default function Index() {
           <p className="text-lg text-gray-200 mb-8">
             {t("cta.subtitle")}
           </p>
-          <SecondaryButton className="text-lg px-8 py-3 border-white text-white hover:bg-white hover:text-[#1A1A2E]">
+          <SecondaryButton
+            className="text-lg px-8 py-3 border-white text-white hover:bg-white hover:text-[#1A1A2E]"
+            onClick={handleJoinAsTeacher}
+          >
             {t("cta.button")}
           </SecondaryButton>
+          {showTeacherToast && (
+            <div className="mt-6 inline-block bg-[#2F7A5B] text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in">
+              {t("cta.teacherRegisterSuccess")}
+            </div>
+          )}
         </div>
       </section>
 
       {/* Footer */}
       <footer className="bg-[#1A1A2E] text-gray-400 py-8 text-center">
-        <p className="text-sm">© {new Date().getFullYear()} معلمي. {t("footer.rights")}</p>
+        <p className="text-sm">
+          © {new Date().getFullYear()}{" "}
+          {lang === "ar" ? (
+            <>
+              <span className="text-[#2F7A5B]">معلم</span>
+              <span className="text-[#DCA842]">ي</span>
+            </>
+          ) : (
+            <>
+              <span className="text-[#2F7A5B]">Mein </span>
+              <span className="text-[#DCA842]">Lehrer</span>
+            </>
+          )}
+          . {t("footer.rights")}
+        </p>
       </footer>
     </div>
   );

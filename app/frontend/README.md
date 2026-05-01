@@ -1,65 +1,43 @@
-# Shadcn-UI Template Usage Instructions
+# Moalemi / Mein Lehrer
 
-## technology stack
+A bilingual (Arabic/German) marketplace platform connecting students with qualified teachers for Quran, Arabic language, and Islamic studies.
 
-This project is built with:
+## Tech Stack
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- **React 18** with TypeScript
+- **Vite** — Fast build tool
+- **Tailwind CSS** — Utility-first styling
+- **shadcn/ui** — Accessible UI components
+- **React Router v6** — Client-side routing
+- **RTL/LTR Support** — Dynamic direction switching
 
-All shadcn/ui components have been downloaded under `@/components/ui`.
+## Features
 
-## File Structure
+- 🌐 Bilingual interface (Arabic RTL / German LTR)
+- 👨‍🏫 Teacher profiles with specializations and ratings
+- 📅 Booking system with confirmation
+- 🔐 Authentication flow (login/register)
+- 📊 Student & Teacher dashboards
+- 🎨 Islamic-inspired color palette
 
-- `index.html` - HTML entry point
-- `vite.config.ts` - Vite configuration file
-- `tailwind.config.ts` - Tailwind CSS configuration file
-- `package.json` - NPM dependencies and scripts
-- `src/main.tsx` - Project entry point
-- `src/App.tsx` - Router shell (imports pages and sets up routes)
-- `src/pages/Index.tsx` - Main page entry point for `/` by default; replace the placeholder page here unless you explicitly reroute `/` elsewhere
-- `src/index.css` - Existing CSS configuration
+## Getting Started
 
-## Components
-
-- All shadcn/ui components are pre-downloaded and available at `@/components/ui`
-
-## Styling
-
-- Add global styles to `src/index.css` or create new CSS files as needed
-- Use Tailwind classes for styling components
-
-## Development
-
-- Import components from `@/components/ui` in your React components
-- Customize the UI by modifying the Tailwind configuration
-- Do not stop after editing isolated components or only `src/App.tsx`. The default template homepage lives in `src/pages/Index.tsx`, and leaving `Welcome to Atoms` there means the app is still unfinished.
-- Completion check: either replace `src/pages/Index.tsx` with your real homepage, or update the `/` route in `src/App.tsx` so the live homepage no longer renders the default placeholder page.
-
-## Note
-
-- The `@/` path alias points to the `src/` directory
-- Do NOT modify `index.html` — the title, description, and logo use environment variable placeholders (`%VITE_APP_TITLE%`, etc.) that are configured at deployment time.
-
-# Commands
-
-**Install Dependencies**
-
-```shell
-pnpm i
+```bash
+npm install
+npm run dev
 ```
 
-**Start Preview**
+The app will be available at `http://localhost:5173`.
 
-```shell
-pnpm run dev
+## Build
+
+```bash
+npm run build
 ```
 
-**To build**
+## Project Structure
 
-```shell
-pnpm run build
-```
+- `src/components/` — Reusable UI components (atoms, molecules, organisms)
+- `src/pages/` — Route-level page components
+- `src/i18n/` — Internationalization (LanguageContext, translations)
+- `src/data/` — Mock data and types

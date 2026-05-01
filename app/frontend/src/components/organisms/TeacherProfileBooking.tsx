@@ -4,6 +4,7 @@ import StarRating from "@/components/atoms/StarRating";
 import BadgeTag from "@/components/atoms/BadgeTag";
 import BookingFormGroup from "@/components/molecules/BookingFormGroup";
 import BookingConfirmationToast from "@/components/molecules/BookingConfirmationToast";
+import AuthModal from "@/components/organisms/AuthModal";
 import { useLanguage } from "@/i18n/LanguageContext";
 import type { Teacher } from "@/data/mockData";
 
@@ -21,8 +22,10 @@ interface BookingConfirmation {
 }
 
 export default function TeacherProfileBooking({ teacher }: TeacherProfileBookingProps) {
-  const { t } = useLanguage();
+  const { t, lang, isAuthenticated, login } = useLanguage();
   const [confirmation, setConfirmation] = useState<BookingConfirmation | null>(null);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authWarning, setAuthWarning] = useState(false);
 
   const handleBookingConfirm = (data: {
     selectedDate: string;
@@ -32,8 +35,14 @@ export default function TeacherProfileBooking({ teacher }: TeacherProfileBooking
     notes: string;
     totalPrice: number;
   }) => {
+    if (!isAuthenticated) {
+      setAuthWarning(true);
+      setAuthModalOpen(true);
+      return;
+    }
+    setAuthWarning(false);
     setConfirmation({
-      teacherName: teacher.name,
+      teacherName: teacher.name[lang],
       selectedDate: data.selectedDate,
       startTime: data.startTime,
       endTime: data.endTime,
@@ -42,15 +51,21 @@ export default function TeacherProfileBooking({ teacher }: TeacherProfileBooking
     });
   };
 
+  const handleAuthSuccess = (name: string) => {
+    login(name);
+    setAuthModalOpen(false);
+    setAuthWarning(false);
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
         {/* Bio Section */}
         <div className="lg:col-span-3 space-y-6">
           <div className="flex items-start gap-6">
-            <AvatarAtom src={teacher.avatar} alt={teacher.name} size="lg" />
+            <AvatarAtom src={teacher.avatar} alt={teacher.name[lang]} size="lg" />
             <div>
-              <h1 className="text-2xl font-bold text-[#1A1A2E]">{teacher.name}</h1>
+              <h1 className="text-2xl font-bold text-[#1A1A2E]">{teacher.name[lang]}</h1>
               <StarRating rating={teacher.rating} />
               <p className="text-sm text-gray-500 mt-1">{teacher.reviewsCount} {t("teacher.reviews")}</p>
             </div>
@@ -58,7 +73,7 @@ export default function TeacherProfileBooking({ teacher }: TeacherProfileBooking
 
           <div className="flex flex-wrap gap-2">
             {teacher.specializations.map((spec) => (
-              <BadgeTag key={spec} text={spec} variant="green" />
+              <BadgeTag key={spec.ar} text={spec[lang]} variant="green" />
             ))}
           </div>
 
@@ -69,7 +84,7 @@ export default function TeacherProfileBooking({ teacher }: TeacherProfileBooking
 
           <div>
             <h2 className="text-lg font-bold text-[#1A1A2E] mb-2">{t("profile.about")}</h2>
-            <p className="text-gray-600 leading-relaxed">{teacher.bio}</p>
+            <p className="text-gray-600 leading-relaxed">{teacher.bio[lang]}</p>
           </div>
 
           <div>
@@ -77,13 +92,13 @@ export default function TeacherProfileBooking({ teacher }: TeacherProfileBooking
             <div className="space-y-4">
               {teacher.services.map((service) => (
                 <div
-                  key={service.name}
+                  key={service.name.ar}
                   className="bg-white rounded-lg border border-gray-200 p-4"
                 >
                   <div className="flex items-center gap-3 mb-2">
-                    <BadgeTag text={service.name} variant="gold" />
+                    <BadgeTag text={service.name[lang]} variant="gold" />
                   </div>
-                  <p className="text-sm text-gray-600">{service.description}</p>
+                  <p className="text-sm text-gray-600">{service.description[lang]}</p>
                 </div>
               ))}
             </div>
@@ -102,11 +117,29 @@ export default function TeacherProfileBooking({ teacher }: TeacherProfileBooking
         </div>
       </div>
 
+      {/* Auth Warning Banner */}
+      {authWarning && !isAuthenticated && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-amber-50 border border-amber-300 text-amber-800 text-sm rounded-lg px-5 py-3 shadow-lg flex items-center gap-2">
+          <span className="font-semibold">{t("auth.loginRequiredTitle")}:</span>
+          <span>{t("auth.loginRequired")}</span>
+        </div>
+      )}
+
       {/* Booking Confirmation Toast */}
       <BookingConfirmationToast
         open={confirmation !== null}
         onClose={() => setConfirmation(null)}
         data={confirmation}
+      />
+
+      {/* Auth Modal */}
+      <AuthModal
+        open={authModalOpen}
+        onOpenChange={(open) => {
+          setAuthModalOpen(open);
+          if (!open) setAuthWarning(false);
+        }}
+        onAuthSuccess={handleAuthSuccess}
       />
     </div>
   );

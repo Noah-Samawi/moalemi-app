@@ -6,16 +6,11 @@ import SecondaryButton from "@/components/atoms/SecondaryButton";
 import { useLanguage } from "@/i18n/LanguageContext";
 import AuthModal from "@/components/organisms/AuthModal";
 
-interface NavbarProps {
-  userName?: string | null;
-  onLogout?: () => void;
-}
-
-export default function Navbar({ userName, onLogout }: NavbarProps) {
+export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [authTab, setAuthTab] = useState<"login" | "register">("login");
-  const { lang, t, toggleLanguage } = useLanguage();
+  const { lang, t, toggleLanguage, isAuthenticated, userName, login, logout } = useLanguage();
 
   const openLogin = () => {
     setAuthTab("login");
@@ -27,14 +22,31 @@ export default function Navbar({ userName, onLogout }: NavbarProps) {
     setAuthOpen(true);
   };
 
+  const handleAuthSuccess = (name: string) => {
+    login(name);
+  };
+
+  const handleLogout = () => {
+    logout();
+  };
+
   return (
     <>
       <nav className="sticky top-0 z-50 bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link to="/" className="text-2xl font-bold">
-              <span className="text-[#2F7A5B]">معلم</span>
-              <span className="text-[#DCA842]">ي</span>
+              {lang === "ar" ? (
+                <>
+                  <span className="text-[#2F7A5B]">معلم</span>
+                  <span className="text-[#DCA842]">ي</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-[#2F7A5B]">Mein </span>
+                  <span className="text-[#DCA842]">Lehrer</span>
+                </>
+              )}
             </Link>
 
             <div className="hidden md:flex items-center gap-6">
@@ -60,7 +72,7 @@ export default function Navbar({ userName, onLogout }: NavbarProps) {
                 {lang === "ar" ? "DE" : "عربي"}
               </button>
 
-              {userName ? (
+              {isAuthenticated && userName ? (
                 <div className="flex items-center gap-3">
                   <Link
                     to="/dashboard"
@@ -71,7 +83,7 @@ export default function Navbar({ userName, onLogout }: NavbarProps) {
                   </Link>
                   <span className="text-sm text-gray-600">{userName}</span>
                   <button
-                    onClick={onLogout}
+                    onClick={handleLogout}
                     className="flex items-center gap-1 text-red-500 hover:text-red-700 text-sm font-medium"
                   >
                     <LogOut className="w-4 h-4" />
@@ -126,7 +138,7 @@ export default function Navbar({ userName, onLogout }: NavbarProps) {
                       </a>
                     </SheetClose>
 
-                    {userName ? (
+                    {isAuthenticated && userName ? (
                       <>
                         <SheetClose asChild>
                           <Link
@@ -138,7 +150,7 @@ export default function Navbar({ userName, onLogout }: NavbarProps) {
                           </Link>
                         </SheetClose>
                         <button
-                          onClick={() => { onLogout?.(); setOpen(false); }}
+                          onClick={() => { handleLogout(); setOpen(false); }}
                           className="text-red-500 font-medium text-lg text-start"
                         >
                           {t("nav.logout")}
@@ -172,6 +184,7 @@ export default function Navbar({ userName, onLogout }: NavbarProps) {
         open={authOpen}
         onOpenChange={setAuthOpen}
         defaultTab={authTab}
+        onAuthSuccess={handleAuthSuccess}
       />
     </>
   );
