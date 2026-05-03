@@ -63,6 +63,8 @@ export const translations: Record<Language, Record<string, string>> = {
     "auth.registerSuccess": "تم إنشاء الحساب بنجاح!",
     "auth.fillAll": "يرجى ملء جميع الحقول",
     "auth.passwordMismatch": "كلمات المرور غير متطابقة",
+    "auth.loading": "جارٍ التحميل...",
+    "auth.unexpectedError": "حدث خطأ غير متوقع. حاول مرة أخرى.",
     "auth.loginRequiredTitle": "تسجيل الدخول مطلوب",
     "auth.loginRequired": "يجب تسجيل الدخول لحجز موعد",
 
@@ -176,6 +178,8 @@ export const translations: Record<Language, Record<string, string>> = {
     "auth.registerSuccess": "Konto erfolgreich erstellt!",
     "auth.fillAll": "Bitte füllen Sie alle Felder aus",
     "auth.passwordMismatch": "Passwörter stimmen nicht überein",
+    "auth.loading": "Wird geladen...",
+    "auth.unexpectedError": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
     "auth.loginRequiredTitle": "Anmeldung erforderlich",
     "auth.loginRequired": "Sie müssen sich anmelden, um einen Termin zu buchen",
 

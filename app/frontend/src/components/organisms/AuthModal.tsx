@@ -10,12 +10,13 @@ import { Label } from "@/components/ui/label";
 import PrimaryButton from "@/components/atoms/PrimaryButton";
 import SecondaryButton from "@/components/atoms/SecondaryButton";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { supabase } from "@/lib/supabase";
 
 interface AuthModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultTab?: "login" | "register";
-  onAuthSuccess?: (name: string) => void;
+  onAuthSuccess?: (name: string, email?: string | null) => void;
 }
 
 export default function AuthModal({
@@ -32,6 +33,7 @@ export default function AuthModal({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const resetForm = () => {
     setEmail("");
@@ -47,23 +49,51 @@ export default function AuthModal({
     resetForm();
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setError("");
+    setSuccess("");
+
     if (!email || !password) {
       setError(t("auth.fillAll"));
       return;
     }
-    // Simulate login
-    setSuccess(t("auth.loginSuccess"));
-    setTimeout(() => {
-      onAuthSuccess?.(email.split("@")[0]);
-      onOpenChange(false);
-      resetForm();
-    }, 1200);
+
+    setIsLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error("Supabase login failed", error);
+        setError(error.message);
+        return;
+      }
+
+      const user = data.user;
+      const loggedName =
+        user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? email;
+
+      setSuccess(t("auth.loginSuccess"));
+      onAuthSuccess?.(loggedName, user?.email ?? null);
+      setTimeout(() => {
+        onOpenChange(false);
+        resetForm();
+      }, 1200);
+    } catch (err) {
+      console.error("Unexpected login error", err);
+      setError(t("auth.unexpectedError"));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     setError("");
+    setSuccess("");
+
     if (!name || !email || !password || !confirmPassword) {
       setError(t("auth.fillAll"));
       return;
@@ -72,13 +102,40 @@ export default function AuthModal({
       setError(t("auth.passwordMismatch"));
       return;
     }
-    // Simulate register
-    setSuccess(t("auth.registerSuccess"));
-    setTimeout(() => {
-      onAuthSuccess?.(name);
-      onOpenChange(false);
-      resetForm();
-    }, 1200);
+
+    setIsLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signUp(
+        {
+          email,
+          password,
+        },
+        {
+          data: {
+            full_name: name,
+          },
+        }
+      );
+
+      if (error) {
+        console.error("Supabase registration failed", error);
+        setError(error.message);
+        return;
+      }
+
+      setSuccess(t("auth.registerSuccess"));
+      onAuthSuccess?.(name, email);
+      setTimeout(() => {
+        onOpenChange(false);
+        resetForm();
+      }, 1200);
+    } catch (err) {
+      console.error("Unexpected registration error", err);
+      setError(t("auth.unexpectedError"));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

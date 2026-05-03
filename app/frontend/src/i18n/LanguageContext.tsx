@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import { translations, type Language } from "./translations";
+import { supabase } from "@/lib/supabase";
 
 interface LanguageContextType {
   lang: Language;
@@ -9,7 +10,9 @@ interface LanguageContextType {
   setLanguage: (lang: Language) => void;
   isAuthenticated: boolean;
   userName: string | null;
-  login: (name: string) => void;
+  userEmail: string | null;
+  isAdmin: boolean;
+  login: (name: string, email?: string | null) => void;
   logout: () => void;
 }
 
@@ -19,8 +22,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLang] = useState<Language>("ar");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userName, setUserName] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   const dir = lang === "ar" ? "rtl" : "ltr";
+  const isAdmin = userEmail === "noah.alsamawi@gmail.com";
 
   const t = useCallback(
     (key: string): string => {
@@ -37,18 +42,77 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     setLang(newLang);
   }, []);
 
-  const login = useCallback((name: string) => {
+  const login = useCallback((name: string, email?: string | null) => {
     setIsAuthenticated(true);
     setUserName(name);
+    setUserEmail(email ?? null);
   }, []);
 
-  const logout = useCallback(() => {
-    setIsAuthenticated(false);
-    setUserName(null);
+  const logout = useCallback(async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error("Supabase logout failed", error);
+    } finally {
+      setIsAuthenticated(false);
+      setUserName(null);
+      setUserEmail(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const session = data?.session;
+        const user = session?.user;
+
+        if (user) {
+          setIsAuthenticated(true);
+          setUserName(user.email ?? user.user_metadata?.full_name ?? null);
+          setUserEmail(user.email ?? null);
+        }
+      } catch (error) {
+        console.error("Failed to initialize Supabase auth session", error);
+      }
+    };
+
+    initializeAuth();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      const user = session?.user;
+      if (user) {
+        setIsAuthenticated(true);
+        setUserName(user.email ?? user.user_metadata?.full_name ?? null);
+        setUserEmail(user.email ?? null);
+      } else {
+        setIsAuthenticated(false);
+        setUserName(null);
+        setUserEmail(null);
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   return (
-    <LanguageContext.Provider value={{ lang, dir, t, toggleLanguage, setLanguage, isAuthenticated, userName, login, logout }}>
+    <LanguageContext.Provider
+      value={{
+        lang,
+        dir,
+        t,
+        toggleLanguage,
+        setLanguage,
+        isAuthenticated,
+        userName,
+        userEmail,
+        isAdmin,
+        login,
+        logout,
+      }}
+    >
       {children}
     </LanguageContext.Provider>
   );

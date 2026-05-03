@@ -10,7 +10,7 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [authTab, setAuthTab] = useState<"login" | "register">("login");
-  const { lang, t, toggleLanguage, isAuthenticated, userName, login, logout } = useLanguage();
+  const { lang, t, toggleLanguage, isAuthenticated, userName, isAdmin, login, logout } = useLanguage();
 
   const openLogin = () => {
     setAuthTab("login");
@@ -22,8 +22,8 @@ export default function Navbar() {
     setAuthOpen(true);
   };
 
-  const handleAuthSuccess = (name: string) => {
-    login(name);
+  const handleAuthSuccess = (name: string, email?: string | null) => {
+    login(name, email);
   };
 
   const handleLogout = () => {
@@ -81,6 +81,14 @@ export default function Navbar() {
                     <LayoutDashboard className="w-4 h-4" />
                     {t("nav.dashboard")}
                   </Link>
+                  {isAdmin ? (
+                    <Link
+                      to="/admin"
+                      className="flex items-center gap-1.5 text-[#2F7A5B] font-medium hover:underline"
+                    >
+                      Admin
+                    </Link>
+                  ) : null}
                   <span className="text-sm text-gray-600">{userName}</span>
                   <button
                     onClick={handleLogout}
@@ -149,6 +157,17 @@ export default function Navbar() {
                             {t("nav.dashboard")}
                           </Link>
                         </SheetClose>
+                        {isAdmin ? (
+                          <SheetClose asChild>
+                            <Link
+                              to="/admin"
+                              className="text-[#2F7A5B] font-medium text-lg"
+                              onClick={() => setOpen(false)}
+                            >
+                              Admin
+                            </Link>
+                          </SheetClose>
+                        ) : null}
                         <button
                           onClick={() => { handleLogout(); setOpen(false); }}
                           className="text-red-500 font-medium text-lg text-start"
