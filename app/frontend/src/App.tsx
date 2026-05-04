@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "@/pages/Index";
 import TeacherProfile from "@/pages/TeacherProfile";
 import Dashboard from "@/pages/Dashboard";
+import AdminDashboard from "@/pages/AdminDashboard";
+import TeacherOnboarding from "@/pages/TeacherOnboarding";
 import { LanguageProvider, useLanguage } from "@/i18n/LanguageContext";
 import "@/index.css";
 
@@ -14,6 +16,8 @@ function AppContent() {
         <Route path="/" element={<Index />} />
         <Route path="/teacher/:id" element={<TeacherProfile />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/onboarding" element={<TeacherOnboarding />} />
       </Routes>
     </div>
   );

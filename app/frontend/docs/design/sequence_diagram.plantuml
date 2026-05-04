@@ -1,0 +1,181 @@
+@startuml معلمي Sequence Diagrams
+
+skinparam shadowing false
+
+' ==================== 1. User Registration & Login ====================
+
+title 1. User Registration & Login Flow
+
+actor Student
+participant "Web UI" as UI
+participant "LanguageContext" as LC
+participant "AuthService" as Auth
+participant "Supabase Auth" as SA
+participant "Users Table" as DB
+
+Student -> UI: Click "Register"
+UI -> UI: Show AuthModal (register mode)
+Student -> UI: Fill name, email, password
+UI -> Auth: register(name, email, password)
+Auth -> SA: signUp({email, password})
+SA --> Auth: {user, session}
+Auth -> DB: INSERT user (id, email, full_name, role="STUDENT")
+DB --> Auth: User record created
+Auth --> UI: AuthResponse {user, session}
+UI -> LC: login(user.name)
+LC --> UI: isAuthenticated=true, userName set
+UI --> Student: Redirect to Dashboard, show success toast
+
+== Login Flow ==
+
+Student -> UI: Click "Login"
+UI -> UI: Show AuthModal (login mode)
+Student -> UI: Fill email, password
+UI -> Auth: login(email, password)
+Auth -> SA: signInWithPassword({email, password})
+SA --> Auth: {user, session}
+Auth -> DB: SELECT * FROM users WHERE id = user.id
+DB --> Auth: User record
+Auth --> UI: AuthResponse {user, session}
+UI -> LC: login(user.name)
+LC --> UI: isAuthenticated=true
+UI --> Student: Redirect to Dashboard
+
+' ==================== 2. Browse & Book a Teacher ====================
+
+title 2. Browse Teachers & Book a Lesson
+
+actor Student2 as Student
+participant "Web UI" as UI
+participant "TeacherService" as TS
+participant "BookingService" as BS
+participant "Teachers API" as TAPI
+participant "Bookings API" as BAPI
+participant "Database" as DB
+
+Student -> UI: Visit Homepage
+UI -> TS: getFeaturedTeachers()
+TS -> TAPI: GET /teachers?featured=true
+TAPI -> DB: SELECT * FROM teachers WHERE is_featured=true
+DB --> TAPI: Teacher[]
+TAPI --> TS: PaginatedResponse<Teacher>
+TS --> UI: Teacher[]
+UI --> Student: Display FeaturedTeachersGrid
+
+Student -> UI: Click "Book Now" on TeacherCard
+UI -> UI: Navigate to /teacher/:id
+UI -> TS: getTeacherById(id)
+TS -> TAPI: GET /teachers/:id
+TAPI -> DB: SELECT * FROM teachers WHERE id=:id
+DB --> TAPI: Teacher
+TAPI --> TS: Teacher
+TS --> UI: Teacher data
+
+Student -> UI: Select date, time, service
+UI -> UI: Calculate total price
+Student -> UI: Click "Confirm Booking"
+UI -> BS: createBooking({teacher_id, service_id, date, start_time, end_time, notes})
+BS -> BAPI: POST /bookings
+note right
+    Input: {
+        "teacher_id": "uuid",
+        "service_id": "uuid",
+        "date": "2026-05-10",
+        "start_time": "10:00",
+        "end_time": "11:00",
+        "notes": "Optional notes"
+    }
+end note
+BAPI -> DB: INSERT INTO bookings (...)
+DB --> BAPI: Booking record
+BAPI --> BS: Booking {id, status="PENDING", ...}
+BS --> UI: Booking confirmed
+UI --> Student: Show BookingConfirmationToast
+
+' ==================== 3. Teacher Onboarding ====================
+
+title 3. Teacher Onboarding Flow
+
+actor Teacher
+participant "Web UI" as UI
+participant "TeacherService" as TS
+participant "Teachers API" as TAPI
+participant "Storage" as Store
+participant "Database" as DB
+
+Teacher -> UI: Click "Become a Teacher"
+UI -> UI: Navigate to /onboarding
+Teacher -> UI: Fill trilingual name, bio, specializations, rate, experience
+Teacher -> UI: Upload avatar
+UI -> Store: upload avatar to Storage
+Store --> UI: avatar_url
+Teacher -> UI: Click "Submit Application"
+UI -> TS: createTeacherProfile(data)
+TS -> TAPI: POST /teachers
+note right
+    Input: {
+        "name": {"ar": "...", "en": "...", "de": "..."},
+        "bio": {"ar": "...", "en": "...", "de": "..."},
+        "specializations": [{"ar": "...", "en": "...", "de": "..."}],
+        "hourly_rate": 25,
+        "experience_years": 10,
+        "avatar_url": "https://..."
+    }
+end note
+TAPI -> DB: INSERT INTO teachers (is_approved=false)
+DB --> TAPI: Teacher record
+TAPI --> TS: Teacher
+TS --> UI: Success
+UI --> Teacher: Show success message "Application submitted"
+
+' ==================== 4. Admin Approve Teacher ====================
+
+title 4. Admin Approves Teacher
+
+actor Admin
+participant "Web UI" as UI
+participant "AdminService" as AS
+participant "Admin API" as AAPI
+participant "Database" as DB
+
+Admin -> UI: Navigate to /admin
+UI -> AS: getPendingTeachers()
+AS -> AAPI: GET /admin/teachers?is_approved=false
+AAPI -> DB: SELECT * FROM teachers WHERE is_approved=false
+DB --> AAPI: Teacher[]
+AAPI --> AS: Teacher[]
+AS --> UI: Pending teachers list
+UI --> Admin: Display pending teachers
+
+Admin -> UI: Click "Approve" on teacher
+UI -> AS: approveTeacher(teacherId)
+AS -> AAPI: PATCH /admin/teachers/:id/approve
+AAPI -> DB: UPDATE teachers SET is_approved=true WHERE id=:id
+DB --> AAPI: Updated teacher
+AAPI --> AS: Teacher {is_approved=true}
+AS --> UI: Teacher approved
+UI --> Admin: Show success toast, remove from pending list
+
+' ==================== 5. Dashboard - View Lessons ====================
+
+title 5. Student/Teacher Dashboard - View Lessons
+
+actor User
+participant "Web UI" as UI
+participant "BookingService" as BS
+participant "Bookings API" as BAPI
+participant "Database" as DB
+
+User -> UI: Navigate to /dashboard
+UI -> BS: getBookingsByStudent(userId) OR getBookingsByTeacher(userId)
+BS -> BAPI: GET /bookings?student_id=:id (or teacher_id)
+BAPI -> DB: SELECT * FROM bookings WHERE student_id=:id AND status='CONFIRMED'
+DB --> BAPI: Booking[]
+BAPI --> BS: Booking[]
+BS --> UI: Upcoming lessons list
+UI --> User: Display lessons with "Join Lesson" button
+
+User -> UI: Click "Join Lesson"
+UI -> UI: Open meeting_url in new tab (Video SDK)
+
+@enduml

@@ -86,6 +86,11 @@ export default function Index() {
               <span className="text-[#2F7A5B]">معلم</span>
               <span className="text-[#DCA842]">ي</span>
             </>
+          ) : lang === "en" ? (
+            <>
+              <span className="text-[#2F7A5B]">My </span>
+              <span className="text-[#DCA842]">Teacher</span>
+            </>
           ) : (
             <>
               <span className="text-[#2F7A5B]">Mein </span>

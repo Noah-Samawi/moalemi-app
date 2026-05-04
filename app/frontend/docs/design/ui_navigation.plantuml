@@ -1,0 +1,53 @@
+@startuml معلمي UI Navigation Flow
+
+skinparam shadowing false
+
+state "Home" as Home {
+    [*] --> Home
+}
+
+state "Teacher List" as TeacherList
+state "Teacher Profile" as TeacherProfile
+state "Booking Modal" as BookingModal
+state "Booking Confirmation" as BookingConfirm
+
+state "Login / Register Modal" as AuthModal
+state "Dashboard" as Dashboard
+state "Admin Dashboard" as Admin
+state "Teacher Onboarding" as Onboarding
+
+Home --> TeacherList : tap "Browse Teachers"
+Home --> AuthModal : tap "Login" / "Register"
+Home --> Dashboard : tap "Dashboard" (if authenticated)
+Home --> Onboarding : tap "Become a Teacher"
+Home --> Admin : tap "Admin" (if admin)
+
+TeacherList --> Home : tap logo / back
+TeacherList --> TeacherProfile : tap teacher card
+TeacherList --> AuthModal : tap "Login"
+
+TeacherProfile --> TeacherList : back
+TeacherProfile --> BookingModal : tap "Book Now"
+TeacherProfile --> AuthModal : tap "Book Now" (if not authenticated)
+
+BookingModal --> TeacherProfile : cancel
+BookingModal --> BookingConfirm : confirm booking
+BookingModal --> AuthModal : (if not authenticated, redirect)
+
+BookingConfirm --> Dashboard : view bookings
+BookingConfirm --> TeacherProfile : close
+
+AuthModal --> Home : login/register success
+AuthModal --> Home : close modal
+
+Dashboard --> Home : tap logo / back
+Dashboard --> TeacherProfile : tap teacher name in lesson
+Dashboard --> Home : logout
+
+Admin --> Home : tap logo / back
+Admin --> Home : logout
+
+Onboarding --> Home : submit success
+Onboarding --> Home : back
+
+@enduml

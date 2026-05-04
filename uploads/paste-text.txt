@@ -1,0 +1,53 @@
+I need to rebuild my React/Vite/Supabase project from scratch with a professional, production-ready architecture. My project files are in app/frontend/.
+
+Core Project Requirements:
+
+1. Multilingual Architecture (3 Languages):
+
+Implement full support for Arabic (RTL), English (LTR), and German (LTR).
+
+Create a robust LanguageContext that handles translations for all UI elements.
+
+Add a language switcher in the Navbar.
+
+2. User Roles & Workflows:
+
+Students: Can register, browse teachers, and book lessons.
+
+Email Notification: When a student books a teacher, trigger an email notification (via Supabase Edge Functions or Resend) to the teacher/student.
+
+Teachers: Simple onboarding. A teacher can add their profile (Name, Bio, Subjects, Price, Image) directly from the app without complexity.
+
+3. Premium Admin Dashboard (Owner Portal):
+
+Access restricted only to noah.alsamawi@gmail.com.
+
+Teacher Management: Approve/Delete teachers and view all bookings.
+
+Promotional Feature: An admin tool to mark certain teachers as 'PRO/Featured'.
+
+Banner Management: A way to post announcements or ads for teachers (e.g., 'Upgrade to PRO for $X/year to appear at the top').
+
+4. Business Logic (PRO Sorting):
+
+Featured/PRO teachers must always appear first in the search results on the Home Page.
+
+Add a 'PRO' badge to their cards.
+
+5. Technical Setup & UI:
+
+Use Tailwind CSS and Shadcn UI for a high-end SaaS look.
+
+Ensure Supabase Realtime is enabled so bookings and teacher updates reflect instantly.
+
+Fix any previous async or syntax errors in the existing files.
+
+Execution Plan:
+
+Start by creating/updating the LanguageContext for 3 languages.
+
+Then, build the AdminDashboard.tsx with the new PRO management features.
+
+Finally, update the Index.tsx to handle the new sorting logic (PRO first).
+
+Please provide the updated SQL Schema including the new is_pro (boolean) and language columns.

@@ -22,7 +22,14 @@ export default function TeacherCard({ teacher }: TeacherCardProps) {
       <div className="flex items-start gap-4 mb-4">
         <AvatarAtom src={teacher.avatar} alt={teacher.name[lang]} size="lg" />
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-bold text-[#1A1A2E] truncate">{teacher.name[lang]}</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-bold text-[#1A1A2E] truncate">{teacher.name[lang]}</h3>
+            {teacher.is_pro && (
+              <span className="bg-[#DCA842] text-white text-xs font-bold px-2 py-0.5 rounded shrink-0">
+                {t("teacher.pro")}
+              </span>
+            )}
+          </div>
           <StarRating rating={teacher.rating} />
           <p className="text-sm text-gray-500 mt-1">{teacher.reviewsCount} {t("teacher.reviews")}</p>
         </div>
@@ -30,7 +37,7 @@ export default function TeacherCard({ teacher }: TeacherCardProps) {
 
       <div className="flex flex-wrap gap-2 mb-4">
         {teacher.specializations.map((spec) => (
-          <BadgeTag key={spec.ar} text={spec[lang]} variant="green" />
+          <BadgeTag key={spec.en} text={spec[lang]} variant="green" />
         ))}
       </div>
 

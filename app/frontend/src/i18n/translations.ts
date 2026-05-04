@@ -1,4 +1,4 @@
-export type Language = "ar" | "de";
+export type Language = "ar" | "en" | "de";
 
 export const translations: Record<Language, Record<string, string>> = {
   ar: {
@@ -9,6 +9,8 @@ export const translations: Record<Language, Record<string, string>> = {
     "nav.register": "إنشاء حساب",
     "nav.dashboard": "لوحة التحكم",
     "nav.logout": "تسجيل الخروج",
+    "nav.admin": "الإدارة",
+    "nav.onboarding": "كن معلماً",
 
     // Hero
     "hero.title": "تعلّم القرآن والعربية مع أفضل المعلمين",
@@ -34,6 +36,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "teacher.perHour": "/ ساعة",
     "teacher.yearsExp": "سنة خبرة",
     "teacher.bookNow": "احجز الآن",
+    "teacher.pro": "مميز",
 
     // CTA Banner
     "cta.title": "انضم كمعلم",
@@ -111,7 +114,177 @@ export const translations: Record<Language, Record<string, string>> = {
 
     // Language
     "lang.ar": "العربية",
+    "lang.en": "الإنجليزية",
     "lang.de": "Deutsch",
+
+    // Admin
+    "admin.title": "لوحة الإدارة",
+    "admin.teachers": "المعلمون",
+    "admin.pro": "مميز",
+    "admin.featured": "مميز",
+    "admin.approve": "موافقة",
+    "admin.delete": "حذف",
+    "admin.announcements": "الإعلانات",
+    "admin.save": "حفظ",
+    "admin.accessDenied": "تم رفض الوصول",
+    "admin.accessDeniedDesc": "ليس لديك صلاحية للوصول إلى هذه الصفحة.",
+
+    // Onboarding
+    "onboarding.title": "كن معلماً",
+    "onboarding.nameAr": "الاسم (بالعربية)",
+    "onboarding.nameEn": "الاسم (بالإنجليزية)",
+    "onboarding.nameDe": "الاسم (بالألمانية)",
+    "onboarding.bioAr": "نبذة (بالعربية)",
+    "onboarding.bioEn": "نبذة (بالإنجليزية)",
+    "onboarding.bioDe": "نبذة (بالألمانية)",
+    "onboarding.specializations": "التخصصات",
+    "onboarding.hourlyRate": "السعر بالساعة ($)",
+    "onboarding.experience": "سنوات الخبرة",
+    "onboarding.submit": "إرسال الطلب",
+    "onboarding.success": "تم إرسال الطلب بنجاح!",
+  },
+
+  en: {
+    // Navbar
+    "nav.home": "Home",
+    "nav.teachers": "Teachers",
+    "nav.login": "Login",
+    "nav.register": "Register",
+    "nav.dashboard": "Dashboard",
+    "nav.logout": "Logout",
+    "nav.admin": "Admin",
+    "nav.onboarding": "Become a Teacher",
+
+    // Hero
+    "hero.title": "Learn Quran & Arabic with the Best Teachers",
+    "hero.subtitle": "A comprehensive platform connecting you with the best teachers for the Holy Quran, Arabic language, and Islamic studies",
+    "hero.cta": "Browse Teachers",
+
+    // Features
+    "features.title": "Why My Teacher?",
+    "features.individual.title": "Individual Lessons",
+    "features.individual.subtitle": "Learn one-on-one with a dedicated teacher focused on your needs",
+    "features.flexibility.title": "Flexible Schedule",
+    "features.flexibility.subtitle": "Choose the time that suits you from multiple available slots",
+    "features.certified.title": "Certified Teachers",
+    "features.certified.subtitle": "All our teachers are certified and highly experienced",
+    "features.live.title": "Live Lessons",
+    "features.live.subtitle": "Interactive live sessions online",
+
+    // Teachers Grid
+    "teachers.title": "Featured Teachers",
+
+    // Teacher Card
+    "teacher.reviews": "reviews",
+    "teacher.perHour": "/ hour",
+    "teacher.yearsExp": "years experience",
+    "teacher.bookNow": "Book Now",
+    "teacher.pro": "PRO",
+
+    // CTA Banner
+    "cta.title": "Join as a Teacher",
+    "cta.subtitle": "Share your knowledge and join our team of teachers",
+    "cta.button": "Register as Teacher",
+
+    // Footer
+    "footer.rights": "All rights reserved",
+
+    // Brand
+    "brand.name": "My Teacher",
+
+    // Auth
+    "auth.login": "Login",
+    "auth.register": "Register",
+    "auth.email": "Email",
+    "auth.password": "Password",
+    "auth.name": "Full Name",
+    "auth.confirmPassword": "Confirm Password",
+    "auth.loginButton": "Login",
+    "auth.registerButton": "Register",
+    "auth.noAccount": "Don't have an account?",
+    "auth.hasAccount": "Already have an account?",
+    "auth.welcomeBack": "Welcome Back",
+    "auth.createAccount": "Create Your New Account",
+    "auth.loginSuccess": "Login successful!",
+    "auth.registerSuccess": "Account created successfully!",
+    "auth.fillAll": "Please fill in all fields",
+    "auth.passwordMismatch": "Passwords do not match",
+    "auth.loginRequiredTitle": "Login Required",
+    "auth.loginRequired": "You must be logged in to book a session",
+
+    // CTA Success
+    "cta.teacherRegisterSuccess": "Your application has been sent to the admin for review",
+
+    // Booking
+    "booking.title": "Book a Lesson",
+    "booking.date": "Date",
+    "booking.startTime": "Start Time",
+    "booking.endTime": "End Time",
+    "booking.name": "Name",
+    "booking.namePlaceholder": "Enter your name",
+    "booking.notes": "Notes",
+    "booking.notesPlaceholder": "Add your notes here...",
+    "booking.totalPrice": "Total Price",
+    "booking.confirm": "Confirm Booking",
+    "booking.selectTime": "Select Time",
+
+    // Booking Confirmation
+    "bookingConfirm.title": "Booking Confirmed!",
+    "bookingConfirm.teacher": "Teacher",
+    "bookingConfirm.date": "Date",
+    "bookingConfirm.time": "Time",
+    "bookingConfirm.price": "Price",
+    "bookingConfirm.student": "Student",
+    "bookingConfirm.close": "Close",
+
+    // Teacher Profile
+    "profile.notFound": "Teacher Not Found",
+    "profile.notFoundDesc": "We couldn't find the teacher you're looking for.",
+    "profile.about": "About the Teacher",
+    "profile.services": "Services",
+    "profile.perHour": "/hour",
+
+    // Dashboard
+    "dashboard.title": "Dashboard",
+    "dashboard.student": "Student",
+    "dashboard.teacher": "Teacher",
+    "dashboard.upcoming": "Upcoming Lessons",
+    "dashboard.history": "Lesson History",
+    "dashboard.settings": "Settings",
+    "dashboard.joinLesson": "Join Lesson",
+    "dashboard.noLessons": "No upcoming lessons",
+    "dashboard.user": "User",
+
+    // Language
+    "lang.ar": "العربية",
+    "lang.en": "English",
+    "lang.de": "Deutsch",
+
+    // Admin
+    "admin.title": "Admin Dashboard",
+    "admin.teachers": "Teachers",
+    "admin.pro": "PRO",
+    "admin.featured": "Featured",
+    "admin.approve": "Approve",
+    "admin.delete": "Delete",
+    "admin.announcements": "Announcements",
+    "admin.save": "Save",
+    "admin.accessDenied": "Access Denied",
+    "admin.accessDeniedDesc": "You do not have permission to access this page.",
+
+    // Onboarding
+    "onboarding.title": "Become a Teacher",
+    "onboarding.nameAr": "Name (Arabic)",
+    "onboarding.nameEn": "Name (English)",
+    "onboarding.nameDe": "Name (German)",
+    "onboarding.bioAr": "Bio (Arabic)",
+    "onboarding.bioEn": "Bio (English)",
+    "onboarding.bioDe": "Bio (German)",
+    "onboarding.specializations": "Specializations",
+    "onboarding.hourlyRate": "Hourly Rate ($)",
+    "onboarding.experience": "Years of Experience",
+    "onboarding.submit": "Submit Application",
+    "onboarding.success": "Application submitted successfully!",
   },
 
   de: {
@@ -122,6 +295,8 @@ export const translations: Record<Language, Record<string, string>> = {
     "nav.register": "Registrieren",
     "nav.dashboard": "Dashboard",
     "nav.logout": "Abmelden",
+    "nav.admin": "Verwaltung",
+    "nav.onboarding": "Lehrer werden",
 
     // Hero
     "hero.title": "Lernen Sie Quran und Arabisch mit den besten Lehrern",
@@ -147,6 +322,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "teacher.perHour": "/ Stunde",
     "teacher.yearsExp": "Jahre Erfahrung",
     "teacher.bookNow": "Jetzt buchen",
+    "teacher.pro": "PRO",
 
     // CTA Banner
     "cta.title": "Werden Sie Lehrer",
@@ -224,6 +400,33 @@ export const translations: Record<Language, Record<string, string>> = {
 
     // Language
     "lang.ar": "العربية",
+    "lang.en": "Englisch",
     "lang.de": "Deutsch",
+
+    // Admin
+    "admin.title": "Admin-Dashboard",
+    "admin.teachers": "Lehrer",
+    "admin.pro": "PRO",
+    "admin.featured": "Empfohlen",
+    "admin.approve": "Genehmigen",
+    "admin.delete": "Löschen",
+    "admin.announcements": "Ankündigungen",
+    "admin.save": "Speichern",
+    "admin.accessDenied": "Zugriff verweigert",
+    "admin.accessDeniedDesc": "Sie haben keine Berechtigung für diese Seite.",
+
+    // Onboarding
+    "onboarding.title": "Lehrer werden",
+    "onboarding.nameAr": "Name (Arabisch)",
+    "onboarding.nameEn": "Name (Englisch)",
+    "onboarding.nameDe": "Name (Deutsch)",
+    "onboarding.bioAr": "Biografie (Arabisch)",
+    "onboarding.bioEn": "Biografie (Englisch)",
+    "onboarding.bioDe": "Biografie (Deutsch)",
+    "onboarding.specializations": "Spezialisierungen",
+    "onboarding.hourlyRate": "Stundensatz ($)",
+    "onboarding.experience": "Jahre Erfahrung",
+    "onboarding.submit": "Antrag einreichen",
+    "onboarding.success": "Antrag erfolgreich eingereicht!",
   },
 };

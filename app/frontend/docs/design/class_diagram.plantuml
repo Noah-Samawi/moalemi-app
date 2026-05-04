@@ -1,0 +1,240 @@
+@startuml معلمي Class Diagram
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam monochrome false
+
+' ==================== Shared Types ====================
+
+class TrilingualText {
+    + ar: string
+    + en: string
+    + de: string
+}
+
+' ==================== Data Models ====================
+
+class User {
+    + id: uuid
+    + email: string
+    + full_name: string
+    + role: UserRole
+    + avatar_url: string | null
+    + preferred_language: Language
+    + created_at: datetime
+    + updated_at: datetime
+}
+
+class Teacher {
+    + id: uuid
+    + user_id: uuid <<FK>>
+    + name: TrilingualText
+    + bio: TrilingualText
+    + avatar_url: string
+    + hourly_rate: number
+    + experience_years: number
+    + rating: float
+    + reviews_count: int
+    + is_pro: boolean
+    + is_featured: boolean
+    + is_approved: boolean
+    + specializations: TrilingualText[]
+    + created_at: datetime
+    + updated_at: datetime
+}
+
+class Service {
+    + id: uuid
+    + teacher_id: uuid <<FK>>
+    + name: TrilingualText
+    + description: TrilingualText
+    + sort_order: int
+}
+
+class Availability {
+    + id: uuid
+    + teacher_id: uuid <<FK>>
+    + day_of_week: int
+    + start_time: time
+    + end_time: time
+    + is_recurring: boolean
+    + specific_date: date | null
+}
+
+class Booking {
+    + id: uuid
+    + student_id: uuid <<FK>>
+    + teacher_id: uuid <<FK>>
+    + service_id: uuid <<FK>>
+    + date: date
+    + start_time: time
+    + end_time: time
+    + status: BookingStatus
+    + notes: string | null
+    + total_price: number
+    + payment_status: PaymentStatus
+    + meeting_url: string | null
+    + created_at: datetime
+    + updated_at: datetime
+}
+
+class Review {
+    + id: uuid
+    + booking_id: uuid <<FK>>
+    + student_id: uuid <<FK>>
+    + teacher_id: uuid <<FK>>
+    + rating: int
+    + comment: string | null
+    + created_at: datetime
+}
+
+class Announcement {
+    + id: uuid
+    + title: TrilingualText
+    + content: TrilingualText
+    + is_active: boolean
+    + created_by: uuid <<FK>>
+    + created_at: datetime
+}
+
+' ==================== Enums ====================
+
+enum UserRole {
+    STUDENT
+    TEACHER
+    ADMIN
+}
+
+enum Language {
+    ar
+    en
+    de
+}
+
+enum BookingStatus {
+    PENDING
+    CONFIRMED
+    CANCELLED
+    COMPLETED
+}
+
+enum PaymentStatus {
+    PENDING
+    PAID
+    REFUNDED
+}
+
+' ==================== Relationships ====================
+
+User "1" -- "0..1" Teacher : has profile >
+Teacher "1" -- "0..*" Service : offers >
+Teacher "1" -- "0..*" Availability : available at >
+Teacher "1" -- "0..*" Booking : receives >
+User "1" -- "0..*" Booking : books as student >
+Booking "1" -- "0..1" Review : has >
+Booking "1" -- "1" Service : for >
+User "1" -- "0..*" Announcement : creates >
+
+' ==================== Frontend Service Interfaces ====================
+
+interface IAuthService {
+    + login(email: string, password: string): Promise<AuthResponse>
+    + register(name: string, email: string, password: string): Promise<AuthResponse>
+    + logout(): Promise<void>
+    + getCurrentUser(): Promise<User | null>
+    + onAuthStateChange(callback: (user: User | null) => void): Subscription
+}
+
+interface ITeacherService {
+    + getTeachers(filters: TeacherFilters): Promise<PaginatedResponse<Teacher>>
+    + getTeacherById(id: uuid): Promise<Teacher>
+    + createTeacherProfile(data: TeacherOnboardingDTO): Promise<Teacher>
+    + updateTeacherProfile(id: uuid, data: Partial<Teacher>): Promise<Teacher>
+    + getFeaturedTeachers(): Promise<Teacher[]>
+}
+
+interface IBookingService {
+    + createBooking(data: CreateBookingDTO): Promise<Booking>
+    + getBookingsByStudent(studentId: uuid): Promise<Booking[]>
+    + getBookingsByTeacher(teacherId: uuid): Promise<Booking[]>
+    + cancelBooking(bookingId: uuid): Promise<Booking>
+    + confirmBooking(bookingId: uuid): Promise<Booking>
+}
+
+interface IAdminService {
+    + getPendingTeachers(): Promise<Teacher[]>
+    + approveTeacher(teacherId: uuid): Promise<Teacher>
+    + toggleFeatured(teacherId: uuid): Promise<Teacher>
+    + deleteTeacher(teacherId: uuid): Promise<void>
+    + createAnnouncement(data: CreateAnnouncementDTO): Promise<Announcement>
+    + updateAnnouncement(id: uuid, data: Partial<Announcement>): Promise<Announcement>
+}
+
+interface IReviewService {
+    + createReview(data: CreateReviewDTO): Promise<Review>
+    + getReviewsByTeacher(teacherId: uuid): Promise<Review[]>
+}
+
+' ==================== DTOs ====================
+
+class AuthResponse {
+    + user: User
+    + session: Session
+}
+
+class TeacherFilters {
+    + specialization: string | null
+    + minPrice: number | null
+    + maxPrice: number | null
+    + minRating: number | null
+    + language: Language | null
+    + page: int
+    + pageSize: int
+}
+
+class PaginatedResponse<T> {
+    + data: T[]
+    + total: int
+    + page: int
+    + pageSize: int
+    + totalPages: int
+}
+
+class CreateBookingDTO {
+    + teacher_id: uuid
+    + service_id: uuid
+    + date: date
+    + start_time: time
+    + end_time: time
+    + notes: string | null
+}
+
+class TeacherOnboardingDTO {
+    + name: TrilingualText
+    + bio: TrilingualText
+    + specializations: TrilingualText[]
+    + hourly_rate: number
+    + experience_years: number
+    + avatar_file: File | null
+}
+
+class CreateAnnouncementDTO {
+    + title: TrilingualText
+    + content: TrilingualText
+}
+
+class CreateReviewDTO {
+    + booking_id: uuid
+    + teacher_id: uuid
+    + rating: int
+    + comment: string | null
+}
+
+IAuthService ..> AuthResponse : returns
+ITeacherService ..> TeacherFilters : accepts
+ITeacherService ..> PaginatedResponse : returns
+IBookingService ..> CreateBookingDTO : accepts
+IAdminService ..> CreateAnnouncementDTO : accepts
+IReviewService ..> CreateReviewDTO : accepts
+
+@enduml
