@@ -5,6 +5,7 @@ import Dashboard from "@/pages/Dashboard";
 import AdminDashboard from "@/pages/AdminDashboard";
 import TeacherOnboarding from "@/pages/TeacherOnboarding";
 import { LanguageProvider, useLanguage } from "@/i18n/LanguageContext";
+import { AuthProvider } from "@/context/AuthContext";
 import "@/index.css";
 
 function AppContent() {
@@ -26,9 +27,11 @@ function AppContent() {
 export default function App() {
   return (
     <BrowserRouter>
-      <LanguageProvider>
-        <AppContent />
-      </LanguageProvider>
+      <AuthProvider>
+        <LanguageProvider>
+          <AppContent />
+        </LanguageProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }
