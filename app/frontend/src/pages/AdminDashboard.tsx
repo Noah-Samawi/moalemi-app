@@ -1,16 +1,69 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/organisms/Navbar";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { teachers as initialTeachers } from "@/data/mockData";
+import { useAuth } from "@/context/AuthContext";
+import { teachers as mockTeachers } from "@/data/mockData";
 import type { Teacher } from "@/data/mockData";
 import PrimaryButton from "@/components/atoms/PrimaryButton";
 import SecondaryButton from "@/components/atoms/SecondaryButton";
 import { ShieldX, Trash2, Check, X } from "lucide-react";
+import {
+  getTeachers,
+  getAllTeachers,
+  updateTeacher,
+  deleteTeacher as deleteTeacherService,
+} from "@/services/teacherService";
+import type { TeacherRow } from "@/services/teacherService";
+
+function mapRowToTeacher(row: TeacherRow, index: number): Teacher {
+  return {
+    id: index,
+    name: { ar: row.name_ar, en: row.name_en, de: row.name_de },
+    avatar: row.avatar || "",
+    specializations: row.specializations || [],
+    experience: row.experience,
+    hourlyRate: row.hourly_rate,
+    rating: Number(row.rating),
+    reviewsCount: row.reviews_count,
+    bio: { ar: row.bio_ar || "", en: row.bio_en || "", de: row.bio_de || "" },
+    services: row.services || [],
+    is_pro: row.is_pro,
+    featured: row.featured,
+  };
+}
 
 export default function AdminDashboard() {
-  const { t, lang, userName } = useLanguage();
-  const [teacherList, setTeacherList] = useState<Teacher[]>(initialTeachers);
+  const { t, lang } = useLanguage();
+  const { userName } = useAuth();
+  const [teacherRows, setTeacherRows] = useState<TeacherRow[]>([]);
+  const [teacherList, setTeacherList] = useState<Teacher[]>([]);
+  const [loading, setLoading] = useState(true);
   const [announcement, setAnnouncement] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchAll() {
+      try {
+        const rows = await getAllTeachers();
+        if (!cancelled) {
+          setTeacherRows(rows);
+          if (rows.length > 0) {
+            setTeacherList(rows.map((r, i) => mapRowToTeacher(r, i)));
+          } else {
+            setTeacherList(mockTeachers);
+          }
+        }
+      } catch {
+        if (!cancelled) {
+          setTeacherList(mockTeachers);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    fetchAll();
+    return () => { cancelled = true; };
+  }, []);
 
   if (!userName?.toLowerCase().includes("noah")) {
     return (
@@ -25,21 +78,92 @@ export default function AdminDashboard() {
     );
   }
 
-  const togglePro = (id: number) => {
-    setTeacherList((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, is_pro: !t.is_pro } : t))
-    );
+  const findRowId = (index: number): string | null => {
+    return teacherRows[index]?.id ?? null;
   };
 
-  const toggleFeatured = (id: number) => {
+  const togglePro = async (index: number) => {
+    const rowId = findRowId(index);
+    const teacher = teacherList[index];
+    if (!teacher) return;
+
+    const newValue = !teacher.is_pro;
     setTeacherList((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, featured: !t.featured } : t))
+      prev.map((t, i) => (i === index ? { ...t, is_pro: newValue } : t))
     );
+
+    if (rowId) {
+      try {
+        await updateTeacher(rowId, { is_pro: newValue });
+      } catch {
+        setTeacherList((prev) =>
+          prev.map((t, i) => (i === index ? { ...t, is_pro: !newValue } : t))
+        );
+      }
+    }
   };
 
-  const deleteTeacher = (id: number) => {
-    setTeacherList((prev) => prev.filter((t) => t.id !== id));
+  const toggleFeatured = async (index: number) => {
+    const rowId = findRowId(index);
+    const teacher = teacherList[index];
+    if (!teacher) return;
+
+    const newValue = !teacher.featured;
+    setTeacherList((prev) =>
+      prev.map((t, i) => (i === index ? { ...t, featured: newValue } : t))
+    );
+
+    if (rowId) {
+      try {
+        await updateTeacher(rowId, { featured: newValue });
+      } catch {
+        setTeacherList((prev) =>
+          prev.map((t, i) => (i === index ? { ...t, featured: !newValue } : t))
+        );
+      }
+    }
   };
+
+  const approveTeacher = async (index: number) => {
+    const rowId = findRowId(index);
+    if (!rowId) return;
+
+    try {
+      await updateTeacher(rowId, { approved: true });
+      setTeacherRows((prev) =>
+        prev.map((r, i) => (i === index ? { ...r, approved: true } : r))
+      );
+    } catch {
+      // silently fail
+    }
+  };
+
+  const deleteTeacher = async (index: number) => {
+    const rowId = findRowId(index);
+    if (!rowId) {
+      setTeacherList((prev) => prev.filter((_, i) => i !== index));
+      return;
+    }
+
+    try {
+      await deleteTeacherService(rowId);
+      setTeacherList((prev) => prev.filter((_, i) => i !== index));
+      setTeacherRows((prev) => prev.filter((_, i) => i !== index));
+    } catch {
+      // silently fail
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FDF8F0]">
+        <Navbar />
+        <div className="flex justify-center items-center py-20">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#C8956C]"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#FDF8F0]">
@@ -64,7 +188,7 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {teacherList.map((teacher) => (
+                {teacherList.map((teacher, index) => (
                   <tr key={teacher.id} className="border-b border-gray-50 hover:bg-gray-50/50">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -74,7 +198,7 @@ export default function AdminDashboard() {
                     </td>
                     <td className="px-6 py-4">
                       <button
-                        onClick={() => togglePro(teacher.id)}
+                        onClick={() => togglePro(index)}
                         className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
                           teacher.is_pro
                             ? "bg-[#DCA842] text-white"
@@ -87,7 +211,7 @@ export default function AdminDashboard() {
                     </td>
                     <td className="px-6 py-4">
                       <button
-                        onClick={() => toggleFeatured(teacher.id)}
+                        onClick={() => toggleFeatured(index)}
                         className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
                           teacher.featured
                             ? "bg-[#2F7A5B] text-white"
@@ -101,7 +225,7 @@ export default function AdminDashboard() {
                     <td className="px-6 py-4">
                       <SecondaryButton
                         className="text-xs px-3 py-1"
-                        onClick={() => {}}
+                        onClick={() => approveTeacher(index)}
                       >
                         <Check className="w-3 h-3 me-1" />
                         {t("admin.approve")}
@@ -109,7 +233,7 @@ export default function AdminDashboard() {
                     </td>
                     <td className="px-6 py-4">
                       <button
-                        onClick={() => deleteTeacher(teacher.id)}
+                        onClick={() => deleteTeacher(index)}
                         className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
                       >
                         <Trash2 className="w-3 h-3" />

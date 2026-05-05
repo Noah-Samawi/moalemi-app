@@ -3,6 +3,7 @@ import Navbar from "@/components/organisms/Navbar";
 import { useLanguage } from "@/i18n/LanguageContext";
 import PrimaryButton from "@/components/atoms/PrimaryButton";
 import { GraduationCap } from "lucide-react";
+import { createTeacher } from "@/services/teacherService";
 
 export default function TeacherOnboarding() {
   const { t } = useLanguage();
@@ -18,15 +19,44 @@ export default function TeacherOnboarding() {
     experience: "",
   });
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 3000);
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      const specs = form.specializations
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .map((s) => ({ ar: s, en: s, de: s }));
+
+      await createTeacher({
+        name_ar: form.nameAr,
+        name_en: form.nameEn,
+        name_de: form.nameDe,
+        bio_ar: form.bioAr,
+        bio_en: form.bioEn,
+        bio_de: form.bioDe,
+        specializations: specs,
+        hourly_rate: Number(form.hourlyRate),
+        experience: Number(form.experience),
+      });
+      setSubmitted(true);
+      setTimeout(() => setSubmitted(false), 3000);
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error ? err.message : "Failed to submit. Please try again."
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -41,6 +71,12 @@ export default function TeacherOnboarding() {
         {submitted && (
           <div className="mb-6 p-4 bg-[#2F7A5B]/10 border border-[#2F7A5B]/20 rounded-lg text-[#2F7A5B] font-medium">
             {t("onboarding.success")}
+          </div>
+        )}
+
+        {submitError && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 font-medium">
+            {submitError}
           </div>
         )}
 
@@ -60,6 +96,7 @@ export default function TeacherOnboarding() {
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B] focus:border-transparent"
                   dir="rtl"
                   required
+                  disabled={submitting}
                 />
               </div>
               <div>
@@ -70,6 +107,7 @@ export default function TeacherOnboarding() {
                   onChange={(e) => handleChange("nameEn", e.target.value)}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B] focus:border-transparent"
                   required
+                  disabled={submitting}
                 />
               </div>
               <div>
@@ -80,6 +118,7 @@ export default function TeacherOnboarding() {
                   onChange={(e) => handleChange("nameDe", e.target.value)}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B] focus:border-transparent"
                   required
+                  disabled={submitting}
                 />
               </div>
             </div>
@@ -97,6 +136,7 @@ export default function TeacherOnboarding() {
                   dir="rtl"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B] focus:border-transparent resize-none"
                   required
+                  disabled={submitting}
                 />
               </div>
               <div>
@@ -107,6 +147,7 @@ export default function TeacherOnboarding() {
                   rows={3}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B] focus:border-transparent resize-none"
                   required
+                  disabled={submitting}
                 />
               </div>
               <div>
@@ -117,6 +158,7 @@ export default function TeacherOnboarding() {
                   rows={3}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B] focus:border-transparent resize-none"
                   required
+                  disabled={submitting}
                 />
               </div>
             </div>
@@ -132,6 +174,7 @@ export default function TeacherOnboarding() {
               placeholder="Quran, Tajweed, Arabic"
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B] focus:border-transparent"
               required
+              disabled={submitting}
             />
           </div>
 
@@ -146,6 +189,7 @@ export default function TeacherOnboarding() {
                 min="1"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B] focus:border-transparent"
                 required
+                disabled={submitting}
               />
             </div>
             <div>
@@ -157,13 +201,21 @@ export default function TeacherOnboarding() {
                 min="0"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B] focus:border-transparent"
                 required
+                disabled={submitting}
               />
             </div>
           </div>
 
           <div className="pt-2">
-            <PrimaryButton type="submit" className="w-full py-3">
-              {t("onboarding.submit")}
+            <PrimaryButton type="submit" className="w-full py-3" disabled={submitting}>
+              {submitting ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                  {t("onboarding.submit")}
+                </span>
+              ) : (
+                t("onboarding.submit")
+              )}
             </PrimaryButton>
           </div>
         </form>

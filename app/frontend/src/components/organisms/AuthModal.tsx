@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import PrimaryButton from "@/components/atoms/PrimaryButton";
 import SecondaryButton from "@/components/atoms/SecondaryButton";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useAuth } from "@/context/AuthContext";
 
 interface AuthModalProps {
   open: boolean;
@@ -25,6 +26,7 @@ export default function AuthModal({
   onAuthSuccess,
 }: AuthModalProps) {
   const { t } = useLanguage();
+  const { signIn, signUp } = useAuth();
   const [tab, setTab] = useState<"login" | "register">(defaultTab);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -32,6 +34,7 @@ export default function AuthModal({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const resetForm = () => {
     setEmail("");
@@ -40,6 +43,7 @@ export default function AuthModal({
     setConfirmPassword("");
     setError("");
     setSuccess("");
+    setLoading(false);
   };
 
   const switchTab = (newTab: "login" | "register") => {
@@ -47,22 +51,32 @@ export default function AuthModal({
     resetForm();
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setError("");
     if (!email || !password) {
       setError(t("auth.fillAll"));
       return;
     }
-    // Simulate login
-    setSuccess(t("auth.loginSuccess"));
-    setTimeout(() => {
+    setLoading(true);
+    try {
+      await signIn(email, password);
+      setSuccess(t("auth.loginSuccess"));
       onAuthSuccess?.(email.split("@")[0]);
       onOpenChange(false);
       resetForm();
-    }, 1200);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Login failed";
+      if (message.includes("Invalid login credentials")) {
+        setError(t("auth.invalidCredentials") || "Invalid email or password");
+      } else {
+        setError(message);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     setError("");
     if (!name || !email || !password || !confirmPassword) {
       setError(t("auth.fillAll"));
@@ -72,13 +86,23 @@ export default function AuthModal({
       setError(t("auth.passwordMismatch"));
       return;
     }
-    // Simulate register
-    setSuccess(t("auth.registerSuccess"));
-    setTimeout(() => {
+    setLoading(true);
+    try {
+      await signUp(email, password, name);
+      setSuccess(t("auth.registerSuccess"));
       onAuthSuccess?.(name);
       onOpenChange(false);
       resetForm();
-    }, 1200);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Registration failed";
+      if (message.includes("already registered")) {
+        setError(t("auth.emailExists") || "This email is already registered");
+      } else {
+        setError(message);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -137,6 +161,7 @@ export default function AuthModal({
                 placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
               />
             </div>
             <div className="space-y-2">
@@ -147,10 +172,11 @@ export default function AuthModal({
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
               />
             </div>
-            <PrimaryButton className="w-full" onClick={handleLogin}>
-              {t("auth.loginButton")}
+            <PrimaryButton className="w-full" onClick={handleLogin} disabled={loading}>
+              {loading ? "..." : t("auth.loginButton")}
             </PrimaryButton>
             <p className="text-center text-sm text-gray-500">
               {t("auth.noAccount")}{" "}
@@ -174,6 +200,7 @@ export default function AuthModal({
                 placeholder={t("auth.name")}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                disabled={loading}
               />
             </div>
             <div className="space-y-2">
@@ -184,6 +211,7 @@ export default function AuthModal({
                 placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
               />
             </div>
             <div className="space-y-2">
@@ -194,6 +222,7 @@ export default function AuthModal({
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
               />
             </div>
             <div className="space-y-2">
@@ -204,10 +233,11 @@ export default function AuthModal({
                 placeholder="••••••••"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
+                disabled={loading}
               />
             </div>
-            <SecondaryButton className="w-full" onClick={handleRegister}>
-              {t("auth.registerButton")}
+            <SecondaryButton className="w-full" onClick={handleRegister} disabled={loading}>
+              {loading ? "..." : t("auth.registerButton")}
             </SecondaryButton>
             <p className="text-center text-sm text-gray-500">
               {t("auth.hasAccount")}{" "}

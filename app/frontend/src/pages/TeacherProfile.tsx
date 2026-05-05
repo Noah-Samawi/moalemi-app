@@ -1,13 +1,57 @@
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import Navbar from "@/components/organisms/Navbar";
 import TeacherProfileBooking from "@/components/organisms/TeacherProfileBooking";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { teachers } from "@/data/mockData";
+import { teachers as mockTeachers } from "@/data/mockData";
+import { getTeacherById } from "@/services/teacherService";
+import type { Teacher } from "@/data/mockData";
 
 export default function TeacherProfile() {
   const { id } = useParams<{ id: string }>();
-  const teacher = teachers.find((t) => t.id === Number(id));
   const { t } = useLanguage();
+  const [teacher, setTeacher] = useState<Teacher | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    async function fetchTeacher() {
+      try {
+        const data = await getTeacherById(id);
+        if (!cancelled) {
+          if (data) {
+            setTeacher(data);
+          } else {
+            const fallback = mockTeachers.find((t) => t.id === Number(id));
+            setTeacher(fallback || null);
+          }
+        }
+      } catch {
+        if (!cancelled) {
+          const fallback = mockTeachers.find((t) => t.id === Number(id));
+          setTeacher(fallback || null);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+    fetchTeacher();
+    return () => { cancelled = true; };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FDF8F0]">
+        <Navbar />
+        <div className="flex justify-center items-center py-20">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#C8956C]"></div>
+        </div>
+      </div>
+    );
+  }
 
   if (!teacher) {
     return (

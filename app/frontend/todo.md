@@ -19,3 +19,21 @@
 - [x] Update `src/App.tsx` — Add routes for /admin and /onboarding, import new pages
 - [x] Update `src/pages/Index.tsx` — Add English brand name support in footer
 - [x] Run `pnpm run lint && pnpm run build` to verify
+
+## Supabase Backend Integration
+
+- [x] Install @supabase/supabase-js dependency
+- [x] Create Supabase database schema — teachers, bookings, announcements tables with RLS policies
+- [x] Create `src/lib/supabase.ts` — Supabase client initialization
+- [x] Create `src/services/authService.ts` — Supabase Auth login/register/logout/session helpers
+- [x] Create `src/services/teacherService.ts` — CRUD operations for teachers table
+- [x] Create `src/services/bookingService.ts` — Booking creation and retrieval
+- [x] Create `src/hooks/useSupabaseAuth.ts` — React hook for Supabase auth state
+- [x] Update `src/i18n/LanguageContext.tsx` — Replace simulated auth with Supabase Auth session
+- [x] Update `src/components/organisms/AuthModal.tsx` — Wire login/register to Supabase Auth
+- [x] Update `src/pages/TeacherOnboarding.tsx` — Save teacher data to Supabase on submit
+- [x] Update `src/pages/AdminDashboard.tsx` — Read/write teachers and announcements from Supabase
+- [x] Update `src/components/organisms/Navbar.tsx` — Use Supabase session for auth state
+- [x] Update `src/components/organisms/FeaturedTeachersGrid.tsx` — Fetch teachers from Supabase
+- [x] Update `src/pages/TeacherProfile.tsx` — Fetch teacher data from Supabase
+- [x] Run `pnpm run lint && pnpm run build` to verify all changes

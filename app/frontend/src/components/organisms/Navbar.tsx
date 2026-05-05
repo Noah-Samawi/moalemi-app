@@ -4,6 +4,7 @@ import { Menu, Globe, LogOut, LayoutDashboard, Shield, GraduationCap, Check } fr
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import SecondaryButton from "@/components/atoms/SecondaryButton";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useAuth } from "@/context/AuthContext";
 import type { Language } from "@/i18n/translations";
 import AuthModal from "@/components/organisms/AuthModal";
 
@@ -19,7 +20,8 @@ export default function Navbar() {
   const [authTab, setAuthTab] = useState<"login" | "register">("login");
   const [langDropdown, setLangDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { lang, t, setLanguage, isAuthenticated, userName, login, logout } = useLanguage();
+  const { lang, t, setLanguage } = useLanguage();
+  const { isAuthenticated, userName, user, logout } = useAuth();
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -41,15 +43,15 @@ export default function Navbar() {
     setAuthOpen(true);
   };
 
-  const handleAuthSuccess = (name: string) => {
-    login(name);
+  const handleAuthSuccess = (_name: string) => {
+    // Auth state is managed by Supabase via AuthContext
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
   };
 
-  const isAdmin = userName?.toLowerCase().includes("noah");
+  const isAdmin = isAuthenticated && (userName?.toLowerCase().includes("noah") || user?.email?.includes("noah"));
 
   const brandName = (
     <>
