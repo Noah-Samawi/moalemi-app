@@ -142,6 +142,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "onboarding.experience": "سنوات الخبرة",
     "onboarding.submit": "إرسال الطلب",
     "onboarding.success": "تم إرسال الطلب بنجاح!",
+    "onboarding.loginRequired": "يجب تسجيل الدخول لتقديم طلب الانضمام كمعلم",
   },
 
   en: {
@@ -285,6 +286,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "onboarding.experience": "Years of Experience",
     "onboarding.submit": "Submit Application",
     "onboarding.success": "Application submitted successfully!",
+    "onboarding.loginRequired": "You must be logged in to submit a teacher application",
   },
 
   de: {
@@ -428,5 +430,6 @@ export const translations: Record<Language, Record<string, string>> = {
     "onboarding.experience": "Jahre Erfahrung",
     "onboarding.submit": "Antrag einreichen",
     "onboarding.success": "Antrag erfolgreich eingereicht!",
+    "onboarding.loginRequired": "Sie müssen angemeldet sein, um eine Lehrerbewerbung einzureichen",
   },
 };

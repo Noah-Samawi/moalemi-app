@@ -1,39 +1,9 @@
-# معلمي / Mein Lehrer / My Teacher — Frontend Enhancements
-
-## Design References
-- Color palette: #2F7A5B (primary green), #DCA842 (gold accent), #1A1A2E (dark navy), #F5F0E8 (warm cream)
-- PRO badge: Gold (#DCA842) with white text
-- Typography: Arabic (Cairo), English/German (Inter/sans-serif)
-- RTL/LTR dynamic switching based on language
+# Bug Fix Plan — معلمي App
 
 ## Development Tasks
 
-- [x] Update `src/i18n/LanguageContext.tsx` — Add "en" as third language, update type, dir logic (ar=rtl, en/de=ltr), update toggleLanguage to cycle ar→en→de→ar
-- [x] Update `src/i18n/translations.ts` — Add full English translation block, update Language type to "ar" | "en" | "de"
-- [x] Update `src/data/mockData.ts` — Change BilingualText to TrilingualText {ar, en, de}, add en text to all teachers, add is_pro and featured boolean fields to Teacher interface, mark teachers 1 and 3 as is_pro=true and featured=true
-- [x] Update `src/components/organisms/Navbar.tsx` — Replace toggle button with 3-language dropdown (AR/EN/DE), update brand name for English ("My Teacher"), add admin link for noah.alsamawi@gmail.com
-- [x] Update `src/components/molecules/TeacherCard.tsx` — Add gold PRO badge for is_pro teachers, update lang references for trilingual data
-- [x] Update `src/components/organisms/FeaturedTeachersGrid.tsx` — Sort teachers: featured/is_pro first, then by rating; update lang for trilingual
-- [x] Create `src/pages/AdminDashboard.tsx` — Admin page restricted to noah.alsamawi@gmail.com: teacher list with approve/delete toggles, PRO/Featured toggle per teacher, announcement banner management
-- [x] Create `src/pages/TeacherOnboarding.tsx` — Teacher registration form: name (ar/en/de), bio (ar/en/de), specializations, hourly rate, experience, avatar upload placeholder
-- [x] Update `src/App.tsx` — Add routes for /admin and /onboarding, import new pages
-- [x] Update `src/pages/Index.tsx` — Add English brand name support in footer
-- [x] Run `pnpm run lint && pnpm run build` to verify
-
-## Supabase Backend Integration
-
-- [x] Install @supabase/supabase-js dependency
-- [x] Create Supabase database schema — teachers, bookings, announcements tables with RLS policies
-- [x] Create `src/lib/supabase.ts` — Supabase client initialization
-- [x] Create `src/services/authService.ts` — Supabase Auth login/register/logout/session helpers
-- [x] Create `src/services/teacherService.ts` — CRUD operations for teachers table
-- [x] Create `src/services/bookingService.ts` — Booking creation and retrieval
-- [x] Create `src/hooks/useSupabaseAuth.ts` — React hook for Supabase auth state
-- [x] Update `src/i18n/LanguageContext.tsx` — Replace simulated auth with Supabase Auth session
-- [x] Update `src/components/organisms/AuthModal.tsx` — Wire login/register to Supabase Auth
-- [x] Update `src/pages/TeacherOnboarding.tsx` — Save teacher data to Supabase on submit
-- [x] Update `src/pages/AdminDashboard.tsx` — Read/write teachers and announcements from Supabase
-- [x] Update `src/components/organisms/Navbar.tsx` — Use Supabase session for auth state
-- [x] Update `src/components/organisms/FeaturedTeachersGrid.tsx` — Fetch teachers from Supabase
-- [x] Update `src/pages/TeacherProfile.tsx` — Fetch teacher data from Supabase
-- [x] Run `pnpm run lint && pnpm run build` to verify all changes
+- [x] Fix TeacherOnboarding auth guard: block form if not logged in, show AuthModal, pass user_id on submit
+- [x] Fix teacherService.createTeacher to accept and pass user_id
+- [x] Hard-lock AdminDashboard to noahalsamawi688@gmail.com only, add toast notifications for all admin actions
+- [x] Update supabase-schema.sql with proper RLS policies (drop old, create new with exact admin email)
+- [x] Run lint and build verification

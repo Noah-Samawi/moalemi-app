@@ -86,6 +86,7 @@ export async function getTeacherRowById(id: string): Promise<TeacherRow | null> 
 }
 
 interface CreateTeacherData {
+  user_id?: string;
   name_ar: string;
   name_en: string;
   name_de: string;

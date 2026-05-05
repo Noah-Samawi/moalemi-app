@@ -34,11 +34,12 @@ function mapRowToTeacher(row: TeacherRow, index: number): Teacher {
 
 export default function AdminDashboard() {
   const { t, lang } = useLanguage();
-  const { userName } = useAuth();
+  const { userName, user } = useAuth();
   const [teacherRows, setTeacherRows] = useState<TeacherRow[]>([]);
   const [teacherList, setTeacherList] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
   const [announcement, setAnnouncement] = useState("");
+  const [toast, setToast] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -65,7 +66,7 @@ export default function AdminDashboard() {
     return () => { cancelled = true; };
   }, []);
 
-  if (!userName?.toLowerCase().includes("noah")) {
+  if (user?.email !== "noahalsamawi688@gmail.com") {
     return (
       <div className="min-h-screen bg-[#FDF8F0]">
         <Navbar />
@@ -95,6 +96,7 @@ export default function AdminDashboard() {
     if (rowId) {
       try {
         await updateTeacher(rowId, { is_pro: newValue });
+        setToast("Teacher updated");
       } catch {
         setTeacherList((prev) =>
           prev.map((t, i) => (i === index ? { ...t, is_pro: !newValue } : t))
@@ -116,6 +118,7 @@ export default function AdminDashboard() {
     if (rowId) {
       try {
         await updateTeacher(rowId, { featured: newValue });
+        setToast("Teacher updated");
       } catch {
         setTeacherList((prev) =>
           prev.map((t, i) => (i === index ? { ...t, featured: !newValue } : t))
@@ -130,6 +133,7 @@ export default function AdminDashboard() {
 
     try {
       await updateTeacher(rowId, { approved: true });
+      setToast("Teacher approved");
       setTeacherRows((prev) =>
         prev.map((r, i) => (i === index ? { ...r, approved: true } : r))
       );
@@ -147,6 +151,7 @@ export default function AdminDashboard() {
 
     try {
       await deleteTeacherService(rowId);
+      setToast("Teacher deleted");
       setTeacherList((prev) => prev.filter((_, i) => i !== index));
       setTeacherRows((prev) => prev.filter((_, i) => i !== index));
     } catch {
@@ -264,6 +269,11 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#2F7A5B] text-white px-6 py-3 rounded-lg shadow-lg text-sm font-medium z-50">
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

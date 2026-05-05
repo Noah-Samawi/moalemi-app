@@ -2,11 +2,15 @@ import { useState } from "react";
 import Navbar from "@/components/organisms/Navbar";
 import { useLanguage } from "@/i18n/LanguageContext";
 import PrimaryButton from "@/components/atoms/PrimaryButton";
-import { GraduationCap } from "lucide-react";
+import { GraduationCap, LogIn } from "lucide-react";
 import { createTeacher } from "@/services/teacherService";
+import { useAuth } from "@/context/AuthContext";
+import AuthModal from "@/components/organisms/AuthModal";
 
 export default function TeacherOnboarding() {
   const { t } = useLanguage();
+  const { user, isAuthenticated } = useAuth();
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   const [form, setForm] = useState({
     nameAr: "",
     nameEn: "",
@@ -38,6 +42,7 @@ export default function TeacherOnboarding() {
         .map((s) => ({ ar: s, en: s, de: s }));
 
       await createTeacher({
+        user_id: user.id,
         name_ar: form.nameAr,
         name_en: form.nameEn,
         name_de: form.nameDe,
@@ -58,6 +63,24 @@ export default function TeacherOnboarding() {
       setSubmitting(false);
     }
   };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#FDF8F0]">
+        <Navbar />
+        <div className="max-w-lg mx-auto px-4 py-20 text-center">
+          <GraduationCap className="w-16 h-16 text-[#2F7A5B] mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-[#1A1A2E] mb-2">{t("onboarding.title")}</h1>
+          <p className="text-gray-500 mb-6">{t("onboarding.loginRequired")}</p>
+          <PrimaryButton onClick={() => setAuthModalOpen(true)}>
+            <LogIn className="w-4 h-4 me-2" />
+            Login / Register
+          </PrimaryButton>
+          <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} defaultTab="register" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#FDF8F0]">

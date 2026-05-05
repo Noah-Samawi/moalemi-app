@@ -73,22 +73,50 @@ CREATE INDEX IF NOT EXISTS idx_announcements_active ON announcements(active);
 -- ROW LEVEL SECURITY
 -- ============================================
 
--- Teachers: anyone can read approved teachers
+-- Teachers: drop existing policies, then recreate with stricter rules
 ALTER TABLE teachers ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "teachers_read_all" ON teachers FOR SELECT USING (true);
+DROP POLICY IF EXISTS "teachers_read_all" ON teachers;
+DROP POLICY IF EXISTS "teachers_insert_own" ON teachers;
+DROP POLICY IF EXISTS "teachers_update_own_or_admin" ON teachers;
+DROP POLICY IF EXISTS "teachers_admin_delete" ON teachers;
+DROP POLICY IF EXISTS "teachers_admin_read_all" ON teachers;
+
+-- Public/anon: only see approved teachers
+CREATE POLICY "teachers_read_approved" ON teachers FOR SELECT USING (approved = true);
+-- Admin: see all teachers (including unapproved) for admin dashboard
+CREATE POLICY "teachers_admin_read_all" ON teachers FOR SELECT TO authenticated USING (auth.jwt() ->> 'email' = 'noahalsamawi688@gmail.com');
+-- Authenticated: insert own row
 CREATE POLICY "teachers_insert_own" ON teachers FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "teachers_update_own_or_admin" ON teachers FOR UPDATE TO authenticated USING (auth.uid() = user_id OR auth.jwt() ->> 'email' LIKE '%noah%');
+-- Authenticated: update own row OR admin
+CREATE POLICY "teachers_update_own_or_admin" ON teachers FOR UPDATE TO authenticated USING (auth.uid() = user_id OR auth.jwt() ->> 'email' = 'noahalsamawi688@gmail.com');
+-- Admin-only: delete teachers
+CREATE POLICY "teachers_admin_delete" ON teachers FOR DELETE TO authenticated USING (auth.jwt() ->> 'email' = 'noahalsamawi688@gmail.com');
 
--- Bookings: involved parties can read, authenticated students can insert
+-- Bookings: drop existing policies, then recreate with stricter rules
 ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "bookings_read_involved" ON bookings FOR SELECT TO authenticated USING (auth.uid() = student_id OR auth.uid() = (SELECT user_id FROM teachers WHERE id = teacher_id));
-CREATE POLICY "bookings_insert_student" ON bookings FOR INSERT TO authenticated WITH CHECK (auth.uid() = student_id);
-CREATE POLICY "bookings_update_involved" ON bookings FOR UPDATE TO authenticated USING (auth.uid() = student_id OR auth.uid() = (SELECT user_id FROM teachers WHERE id = teacher_id));
+DROP POLICY IF EXISTS "bookings_read_involved" ON bookings;
+DROP POLICY IF EXISTS "bookings_insert_student" ON bookings;
+DROP POLICY IF EXISTS "bookings_update_involved" ON bookings;
+DROP POLICY IF EXISTS "bookings_admin_all" ON bookings;
 
--- Announcements: anyone can read active, admin can manage
+-- Admin: full CRUD on bookings
+CREATE POLICY "bookings_admin_all" ON bookings FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'noahalsamawi688@gmail.com') WITH CHECK (auth.jwt() ->> 'email' = 'noahalsamawi688@gmail.com');
+-- Students: read own bookings
+CREATE POLICY "bookings_read_student" ON bookings FOR SELECT TO authenticated USING (auth.uid() = student_id);
+-- Teachers: read bookings where they are the teacher
+CREATE POLICY "bookings_read_teacher" ON bookings FOR SELECT TO authenticated USING (auth.uid() = (SELECT user_id FROM teachers WHERE id = teacher_id));
+-- Students: insert own booking
+CREATE POLICY "bookings_insert_student" ON bookings FOR INSERT TO authenticated WITH CHECK (auth.uid() = student_id);
+
+-- Announcements: drop existing policies, then recreate with stricter rules
 ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "announcements_read_all" ON announcements FOR SELECT USING (true);
-CREATE POLICY "announcements_admin_manage" ON announcements FOR ALL TO authenticated USING (auth.jwt() ->> 'email' LIKE '%noah%');
+DROP POLICY IF EXISTS "announcements_read_all" ON announcements;
+DROP POLICY IF EXISTS "announcements_admin_manage" ON announcements;
+
+-- Public: only see active announcements
+CREATE POLICY "announcements_read_active" ON announcements FOR SELECT USING (active = true);
+-- Admin: full CRUD on announcements
+CREATE POLICY "announcements_admin_all" ON announcements FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'noahalsamawi688@gmail.com') WITH CHECK (auth.jwt() ->> 'email' = 'noahalsamawi688@gmail.com');
 
 -- ============================================
 -- SEED DATA (4 mock teachers)
