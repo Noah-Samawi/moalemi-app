@@ -36,6 +36,13 @@ export function onAuthStateChange(
   });
 }
 
+export async function resetPassword(email: string) {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin,
+  });
+  if (error) throw error;
+}
+
 export function getUserName(user: User | null): string | null {
   if (!user) return null;
   return user.user_metadata?.name || user.email?.split('@')[0] || null;

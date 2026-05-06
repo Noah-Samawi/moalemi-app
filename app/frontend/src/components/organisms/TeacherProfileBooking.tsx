@@ -5,6 +5,7 @@ import BadgeTag from "@/components/atoms/BadgeTag";
 import BookingFormGroup from "@/components/molecules/BookingFormGroup";
 import BookingConfirmationToast from "@/components/molecules/BookingConfirmationToast";
 import AuthModal from "@/components/organisms/AuthModal";
+import ReviewsSection from "@/components/organisms/ReviewsSection";
 import { useLanguage } from "@/i18n/LanguageContext";
 import type { Teacher } from "@/data/mockData";
 
@@ -115,6 +116,16 @@ export default function TeacherProfileBooking({ teacher }: TeacherProfileBooking
             />
           </div>
         </div>
+      </div>
+
+      {/* Reviews Section */}
+      <div className="mt-12 border-t border-gray-200 pt-8">
+        <h2 className="text-lg font-bold text-[#1A1A2E] mb-6">{t("review.reviews")}</h2>
+        <ReviewsSection
+          teacherId={String(teacher.id)}
+          rating={teacher.rating}
+          reviewsCount={teacher.reviewsCount}
+        />
       </div>
 
       {/* Auth Warning Banner */}

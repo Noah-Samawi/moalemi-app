@@ -26,8 +26,8 @@ export default function AuthModal({
   onAuthSuccess,
 }: AuthModalProps) {
   const { t } = useLanguage();
-  const { signIn, signUp } = useAuth();
-  const [tab, setTab] = useState<"login" | "register">(defaultTab);
+  const { signIn, signUp, resetPassword } = useAuth();
+  const [tab, setTab] = useState<"login" | "register" | "forgot">(defaultTab);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -46,7 +46,7 @@ export default function AuthModal({
     setLoading(false);
   };
 
-  const switchTab = (newTab: "login" | "register") => {
+  const switchTab = (newTab: "login" | "register" | "forgot") => {
     setTab(newTab);
     resetForm();
   };
@@ -105,58 +105,59 @@ export default function AuthModal({
     }
   };
 
+  const handleResetPassword = async () => {
+    setError("");
+    if (!email) {
+      setError(t("auth.fillAll"));
+      return;
+    }
+    setLoading(true);
+    try {
+      await resetPassword(email);
+      setSuccess(t("auth.resetPasswordSuccess"));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to send reset link";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-center text-xl font-bold text-[#1A1A2E]">
-            {tab === "login" ? t("auth.welcomeBack") : t("auth.createAccount")}
+            {tab === "forgot"
+              ? t("auth.forgotPassword")
+              : tab === "login"
+                ? t("auth.welcomeBack")
+                : t("auth.createAccount")}
           </DialogTitle>
         </DialogHeader>
 
-        {/* Tab Switcher */}
-        <div className="flex rounded-lg overflow-hidden border border-gray-200 mb-4">
-          <button
-            className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${
-              tab === "login"
-                ? "bg-[#2F7A5B] text-white"
-                : "bg-white text-gray-600 hover:bg-gray-50"
-            }`}
-            onClick={() => switchTab("login")}
-          >
-            {t("auth.login")}
-          </button>
-          <button
-            className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${
-              tab === "register"
-                ? "bg-[#2F7A5B] text-white"
-                : "bg-white text-gray-600 hover:bg-gray-50"
-            }`}
-            onClick={() => switchTab("register")}
-          >
-            {t("auth.register")}
-          </button>
-        </div>
-
-        {/* Error / Success Messages */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3 text-center">
-            {error}
-          </div>
-        )}
-        {success && (
-          <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg p-3 text-center">
-            {success}
-          </div>
-        )}
-
-        {/* Login Form */}
-        {tab === "login" && (
+        {/* Forgot Password Tab */}
+        {tab === "forgot" && (
           <div className="space-y-4">
+            <p className="text-sm text-gray-500 text-center">
+              {t("auth.forgotPasswordDesc")}
+            </p>
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3 text-center">
+                {error}
+              </div>
+            )}
+            {success && (
+              <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg p-3 text-center">
+                {success}
+              </div>
+            )}
+
             <div className="space-y-2">
-              <Label htmlFor="auth-email">{t("auth.email")}</Label>
+              <Label htmlFor="auth-reset-email">{t("auth.email")}</Label>
               <Input
-                id="auth-email"
+                id="auth-reset-email"
                 type="email"
                 placeholder="name@example.com"
                 value={email}
@@ -164,91 +165,167 @@ export default function AuthModal({
                 disabled={loading}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="auth-password">{t("auth.password")}</Label>
-              <Input
-                id="auth-password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
-              />
-            </div>
-            <PrimaryButton className="w-full" onClick={handleLogin} disabled={loading}>
-              {loading ? "..." : t("auth.loginButton")}
+            <PrimaryButton className="w-full" onClick={handleResetPassword} disabled={loading}>
+              {loading ? "..." : t("auth.sendResetLink")}
             </PrimaryButton>
             <p className="text-center text-sm text-gray-500">
-              {t("auth.noAccount")}{" "}
-              <button
-                className="text-[#2F7A5B] font-semibold hover:underline"
-                onClick={() => switchTab("register")}
-              >
-                {t("auth.register")}
-              </button>
-            </p>
-          </div>
-        )}
-
-        {/* Register Form */}
-        {tab === "register" && (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="auth-name">{t("auth.name")}</Label>
-              <Input
-                id="auth-name"
-                placeholder={t("auth.name")}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                disabled={loading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="auth-reg-email">{t("auth.email")}</Label>
-              <Input
-                id="auth-reg-email"
-                type="email"
-                placeholder="name@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={loading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="auth-reg-password">{t("auth.password")}</Label>
-              <Input
-                id="auth-reg-password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="auth-confirm-password">{t("auth.confirmPassword")}</Label>
-              <Input
-                id="auth-confirm-password"
-                type="password"
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                disabled={loading}
-              />
-            </div>
-            <SecondaryButton className="w-full" onClick={handleRegister} disabled={loading}>
-              {loading ? "..." : t("auth.registerButton")}
-            </SecondaryButton>
-            <p className="text-center text-sm text-gray-500">
-              {t("auth.hasAccount")}{" "}
               <button
                 className="text-[#2F7A5B] font-semibold hover:underline"
                 onClick={() => switchTab("login")}
               >
-                {t("auth.login")}
+                {t("auth.backToLogin")}
               </button>
             </p>
           </div>
+        )}
+
+        {/* Login / Register Tab Switcher */}
+        {tab !== "forgot" && (
+          <>
+            <div className="flex rounded-lg overflow-hidden border border-gray-200 mb-4">
+              <button
+                className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${
+                  tab === "login"
+                    ? "bg-[#2F7A5B] text-white"
+                    : "bg-white text-gray-600 hover:bg-gray-50"
+                }`}
+                onClick={() => switchTab("login")}
+              >
+                {t("auth.login")}
+              </button>
+              <button
+                className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${
+                  tab === "register"
+                    ? "bg-[#2F7A5B] text-white"
+                    : "bg-white text-gray-600 hover:bg-gray-50"
+                }`}
+                onClick={() => switchTab("register")}
+              >
+                {t("auth.register")}
+              </button>
+            </div>
+
+            {/* Error / Success Messages */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3 text-center">
+                {error}
+              </div>
+            )}
+            {success && (
+              <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg p-3 text-center">
+                {success}
+              </div>
+            )}
+
+            {/* Login Form */}
+            {tab === "login" && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="auth-email">{t("auth.email")}</Label>
+                  <Input
+                    id="auth-email"
+                    type="email"
+                    placeholder="name@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="auth-password">{t("auth.password")}</Label>
+                  <Input
+                    id="auth-password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                <PrimaryButton className="w-full" onClick={handleLogin} disabled={loading}>
+                  {loading ? "..." : t("auth.loginButton")}
+                </PrimaryButton>
+                <p className="text-center text-sm">
+                  <button
+                    className="text-[#2F7A5B] font-semibold hover:underline"
+                    onClick={() => switchTab("forgot")}
+                  >
+                    {t("auth.forgotPassword")}
+                  </button>
+                </p>
+                <p className="text-center text-sm text-gray-500">
+                  {t("auth.noAccount")}{" "}
+                  <button
+                    className="text-[#2F7A5B] font-semibold hover:underline"
+                    onClick={() => switchTab("register")}
+                  >
+                    {t("auth.register")}
+                  </button>
+                </p>
+              </div>
+            )}
+
+            {/* Register Form */}
+            {tab === "register" && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="auth-name">{t("auth.name")}</Label>
+                  <Input
+                    id="auth-name"
+                    placeholder={t("auth.name")}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="auth-reg-email">{t("auth.email")}</Label>
+                  <Input
+                    id="auth-reg-email"
+                    type="email"
+                    placeholder="name@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="auth-reg-password">{t("auth.password")}</Label>
+                  <Input
+                    id="auth-reg-password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="auth-confirm-password">{t("auth.confirmPassword")}</Label>
+                  <Input
+                    id="auth-confirm-password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                <SecondaryButton className="w-full" onClick={handleRegister} disabled={loading}>
+                  {loading ? "..." : t("auth.registerButton")}
+                </SecondaryButton>
+                <p className="text-center text-sm text-gray-500">
+                  {t("auth.hasAccount")}{" "}
+                  <button
+                    className="text-[#2F7A5B] font-semibold hover:underline"
+                    onClick={() => switchTab("login")}
+                  >
+                    {t("auth.login")}
+                  </button>
+                </p>
+              </div>
+            )}
+          </>
         )}
       </DialogContent>
     </Dialog>
