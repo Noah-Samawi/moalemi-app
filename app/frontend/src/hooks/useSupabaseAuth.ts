@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
-import { signIn as authSignIn, signUp as authSignUp, signOut as authSignOut, onAuthStateChange, getUserName } from '@/services/authService';
+import { signIn as authSignIn, signUp as authSignUp, signOut as authSignOut, resetPassword as authResetPassword, onAuthStateChange, getUserName } from '@/services/authService';
 
 interface UseSupabaseAuthReturn {
   user: User | null;
@@ -11,6 +11,7 @@ interface UseSupabaseAuthReturn {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name: string) => Promise<void>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
 }
 
 export function useSupabaseAuth(): UseSupabaseAuthReturn {
@@ -40,8 +41,12 @@ export function useSupabaseAuth(): UseSupabaseAuthReturn {
     await authSignOut();
   }, []);
 
+  const resetPassword = useCallback(async (email: string) => {
+    await authResetPassword(email);
+  }, []);
+
   const userName = getUserName(user);
   const isAuthenticated = !!user;
 
-  return { user, session, loading, userName, isAuthenticated, signIn, signUp, signOut };
+  return { user, session, loading, userName, isAuthenticated, signIn, signUp, signOut, resetPassword };
 }

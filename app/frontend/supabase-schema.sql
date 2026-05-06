@@ -175,4 +175,59 @@ INSERT INTO teachers (id, name_ar, name_en, name_de, avatar, specializations, bi
   8, 18, 4.70, 156, false, false, true
 );
 
+-- ============================================
+-- REVIEWS TABLE
+-- ============================================
+CREATE TABLE IF NOT EXISTS reviews (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  teacher_id UUID REFERENCES teachers(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  comment TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(teacher_id, user_id)
+);
+
+-- ============================================
+-- REVIEWS INDEXES
+-- ============================================
+CREATE INDEX IF NOT EXISTS idx_reviews_teacher_id ON reviews(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_user_id ON reviews(user_id);
+
+-- ============================================
+-- REVIEWS ROW LEVEL SECURITY
+-- ============================================
+ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "reviews_read_all" ON reviews;
+DROP POLICY IF EXISTS "reviews_insert_authenticated" ON reviews;
+DROP POLICY IF EXISTS "reviews_delete_own" ON reviews;
+
+-- Public: anyone can read reviews
+CREATE POLICY "reviews_read_all" ON reviews FOR SELECT USING (true);
+-- Authenticated: insert own review (one per teacher per user enforced by UNIQUE constraint)
+CREATE POLICY "reviews_insert_authenticated" ON reviews FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+-- Authenticated: delete own review
+CREATE POLICY "reviews_delete_own" ON reviews FOR DELETE TO authenticated USING (auth.uid() = user_id);
+
+-- ============================================
+-- FUNCTION: update teacher rating & reviews_count
+-- ============================================
+CREATE OR REPLACE FUNCTION update_teacher_rating()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE teachers
+  SET
+    rating = COALESCE((SELECT ROUND(AVG(rating)::numeric, 2) FROM reviews WHERE teacher_id = COALESCE(NEW.teacher_id, OLD.teacher_id)), 0),
+    reviews_count = COALESCE((SELECT COUNT(*)::integer FROM reviews WHERE teacher_id = COALESCE(NEW.teacher_id, OLD.teacher_id)), 0)
+  WHERE id = COALESCE(NEW.teacher_id, OLD.teacher_id);
+  RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_update_teacher_rating ON reviews;
+CREATE TRIGGER trg_update_teacher_rating
+  AFTER INSERT OR DELETE ON reviews
+  FOR EACH ROW
+  EXECUTE FUNCTION update_teacher_rating();
+
 COMMIT;
