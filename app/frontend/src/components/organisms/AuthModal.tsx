@@ -26,8 +26,8 @@ export default function AuthModal({
   onAuthSuccess,
 }: AuthModalProps) {
   const { t } = useLanguage();
-  const { signIn, signUp, resetPassword } = useAuth();
-  const [tab, setTab] = useState<"login" | "register" | "forgot">("login");
+  const { signIn, signUp } = useAuth();
+  const [tab, setTab] = useState<"login" | "register">(defaultTab);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -46,7 +46,7 @@ export default function AuthModal({
     setLoading(false);
   };
 
-  const switchTab = (newTab: "login" | "register" | "forgot") => {
+  const switchTab = (newTab: "login" | "register") => {
     setTab(newTab);
     resetForm();
   };
@@ -105,62 +105,38 @@ export default function AuthModal({
     }
   };
 
-  const handleForgotPassword = async () => {
-    setError("");
-    if (!email) {
-      setError(t("auth.enterEmail"));
-      return;
-    }
-    setLoading(true);
-    try {
-      await resetPassword(email);
-      setSuccess(t("auth.resetPasswordSuccess"));
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Password reset failed";
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-center text-xl font-bold text-[#1A1A2E]">
-            {tab === "login"
-              ? t("auth.welcomeBack")
-              : tab === "register"
-                ? t("auth.createAccount")
-                : t("auth.forgotPassword")}
+            {tab === "login" ? t("auth.welcomeBack") : t("auth.createAccount")}
           </DialogTitle>
         </DialogHeader>
 
         {/* Tab Switcher */}
-        {tab !== "forgot" && (
-          <div className="flex rounded-lg overflow-hidden border border-gray-200 mb-4">
-            <button
-              className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${
-                tab === "login"
-                  ? "bg-[#2F7A5B] text-white"
-                  : "bg-white text-gray-600 hover:bg-gray-50"
-              }`}
-              onClick={() => switchTab("login")}
-            >
-              {t("auth.login")}
-            </button>
-            <button
-              className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${
-                tab === "register"
-                  ? "bg-[#2F7A5B] text-white"
-                  : "bg-white text-gray-600 hover:bg-gray-50"
-              }`}
-              onClick={() => switchTab("register")}
-            >
-              {t("auth.register")}
-            </button>
-          </div>
-        )}
+        <div className="flex rounded-lg overflow-hidden border border-gray-200 mb-4">
+          <button
+            className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${
+              tab === "login"
+                ? "bg-[#2F7A5B] text-white"
+                : "bg-white text-gray-600 hover:bg-gray-50"
+            }`}
+            onClick={() => switchTab("login")}
+          >
+            {t("auth.login")}
+          </button>
+          <button
+            className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${
+              tab === "register"
+                ? "bg-[#2F7A5B] text-white"
+                : "bg-white text-gray-600 hover:bg-gray-50"
+            }`}
+            onClick={() => switchTab("register")}
+          >
+            {t("auth.register")}
+          </button>
+        </div>
 
         {/* Error / Success Messages */}
         {error && (
@@ -202,23 +178,15 @@ export default function AuthModal({
             <PrimaryButton className="w-full" onClick={handleLogin} disabled={loading}>
               {loading ? "..." : t("auth.loginButton")}
             </PrimaryButton>
-            <div className="flex items-center justify-between text-sm">
-              <p className="text-gray-500">
-                {t("auth.noAccount")}{" "}
-                <button
-                  className="text-[#2F7A5B] font-semibold hover:underline"
-                  onClick={() => switchTab("register")}
-                >
-                  {t("auth.register")}
-                </button>
-              </p>
+            <p className="text-center text-sm text-gray-500">
+              {t("auth.noAccount")}{" "}
               <button
                 className="text-[#2F7A5B] font-semibold hover:underline"
-                onClick={() => switchTab("forgot")}
+                onClick={() => switchTab("register")}
               >
-                {t("auth.forgotPassword")}
+                {t("auth.register")}
               </button>
-            </div>
+            </p>
           </div>
         )}
 
@@ -278,37 +246,6 @@ export default function AuthModal({
                 onClick={() => switchTab("login")}
               >
                 {t("auth.login")}
-              </button>
-            </p>
-          </div>
-        )}
-
-        {/* Forgot Password Form */}
-        {tab === "forgot" && (
-          <div className="space-y-4">
-            <p className="text-sm text-gray-500 text-center">
-              {t("auth.forgotPasswordDesc")}
-            </p>
-            <div className="space-y-2">
-              <Label htmlFor="auth-forgot-email">{t("auth.email")}</Label>
-              <Input
-                id="auth-forgot-email"
-                type="email"
-                placeholder="name@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={loading}
-              />
-            </div>
-            <PrimaryButton className="w-full" onClick={handleForgotPassword} disabled={loading}>
-              {loading ? "..." : t("auth.sendResetLink")}
-            </PrimaryButton>
-            <p className="text-center text-sm text-gray-500">
-              <button
-                className="text-[#2F7A5B] font-semibold hover:underline"
-                onClick={() => switchTab("login")}
-              >
-                {t("auth.backToLogin")}
               </button>
             </p>
           </div>

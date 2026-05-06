@@ -1,6 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
-import { signIn as authSignIn, signUp as authSignUp, signOut as authSignOut, onAuthStateChange, getUserName } from '@/services/authService';
+import {
+  signIn as authSignIn,
+  signUp as authSignUp,
+  signOut as authSignOut,
+  onAuthStateChange,
+  getUserName,
+  getSession,
+} from '@/services/authService';
 
 interface UseSupabaseAuthReturn {
   user: User | null;
@@ -19,6 +26,16 @@ export function useSupabaseAuth(): UseSupabaseAuthReturn {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Hydrate session immediately on mount (critical for page refresh)
+    getSession()
+      .then(({ user, session }) => {
+        setUser(user);
+        setSession(session);
+      })
+      .catch((err) => console.error('[Auth] getSession error:', err))
+      .finally(() => setLoading(false));
+
+    // Also subscribe to future auth state changes
     const { data: { subscription } } = onAuthStateChange((user, session) => {
       setUser(user);
       setSession(session);
@@ -29,15 +46,30 @@ export function useSupabaseAuth(): UseSupabaseAuthReturn {
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    await authSignIn(email, password);
+    try {
+      await authSignIn(email, password);
+    } catch (err) {
+      console.error('[Auth] signIn error:', err);
+      throw err;
+    }
   }, []);
 
   const signUp = useCallback(async (email: string, password: string, name: string) => {
-    await authSignUp(email, password, name);
+    try {
+      await authSignUp(email, password, name);
+    } catch (err) {
+      console.error('[Auth] signUp error:', err);
+      throw err;
+    }
   }, []);
 
   const signOut = useCallback(async () => {
-    await authSignOut();
+    try {
+      await authSignOut();
+    } catch (err) {
+      console.error('[Auth] signOut error:', err);
+      throw err;
+    }
   }, []);
 
   const userName = getUserName(user);

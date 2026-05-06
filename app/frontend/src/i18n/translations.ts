@@ -68,12 +68,6 @@ export const translations: Record<Language, Record<string, string>> = {
     "auth.passwordMismatch": "كلمات المرور غير متطابقة",
     "auth.loginRequiredTitle": "تسجيل الدخول مطلوب",
     "auth.loginRequired": "يجب تسجيل الدخول لحجز موعد",
-    "auth.forgotPassword": "نسيت كلمة المرور؟",
-    "auth.forgotPasswordDesc": "أدخل بريدك الإلكتروني وسنرسل لك رابطاً لإعادة تعيين كلمة المرور",
-    "auth.sendResetLink": "إرسال رابط إعادة التعيين",
-    "auth.resetPasswordSuccess": "تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني",
-    "auth.enterEmail": "يرجى إدخال البريد الإلكتروني",
-    "auth.backToLogin": "العودة لتسجيل الدخول",
 
     // CTA Success
     "cta.teacherRegisterSuccess": "تم إرسال طلبك للإدارة للمراجعة",
@@ -149,20 +143,6 @@ export const translations: Record<Language, Record<string, string>> = {
     "onboarding.submit": "إرسال الطلب",
     "onboarding.success": "تم إرسال الطلب بنجاح!",
     "onboarding.loginRequired": "يجب تسجيل الدخول لتقديم طلب الانضمام كمعلم",
-
-    // Reviews
-    "review.reviews": "تقييم",
-    "review.writeReview": "اكتب تقييماً",
-    "review.yourRating": "تقييمك",
-    "review.yourComment": "تعليقك",
-    "review.commentPlaceholder": "شاركنا رأيك في تجربتك...",
-    "review.submit": "إرسال التقييم",
-    "review.submitting": "جارٍ الإرسال...",
-    "review.selectRating": "يرجى اختيار التقييم",
-    "review.alreadyReviewed": "لقد قمت بتقييم هذا المعلم مسبقاً",
-    "review.submitError": "حدث خطأ أثناء إرسال التقييم",
-    "review.cancel": "إلغاء",
-    "review.noReviews": "لا توجد تقييمات بعد",
   },
 
   en: {
@@ -232,12 +212,6 @@ export const translations: Record<Language, Record<string, string>> = {
     "auth.passwordMismatch": "Passwords do not match",
     "auth.loginRequiredTitle": "Login Required",
     "auth.loginRequired": "You must be logged in to book a session",
-    "auth.forgotPassword": "Forgot Password?",
-    "auth.forgotPasswordDesc": "Enter your email and we'll send you a link to reset your password",
-    "auth.sendResetLink": "Send Reset Link",
-    "auth.resetPasswordSuccess": "Password reset link has been sent to your email",
-    "auth.enterEmail": "Please enter your email",
-    "auth.backToLogin": "Back to Login",
 
     // CTA Success
     "cta.teacherRegisterSuccess": "Your application has been sent to the admin for review",
@@ -313,20 +287,6 @@ export const translations: Record<Language, Record<string, string>> = {
     "onboarding.submit": "Submit Application",
     "onboarding.success": "Application submitted successfully!",
     "onboarding.loginRequired": "You must be logged in to submit a teacher application",
-
-    // Reviews
-    "review.reviews": "reviews",
-    "review.writeReview": "Write a Review",
-    "review.yourRating": "Your Rating",
-    "review.yourComment": "Your Comment",
-    "review.commentPlaceholder": "Share your experience...",
-    "review.submit": "Submit Review",
-    "review.submitting": "Submitting...",
-    "review.selectRating": "Please select a rating",
-    "review.alreadyReviewed": "You have already reviewed this teacher",
-    "review.submitError": "An error occurred while submitting your review",
-    "review.cancel": "Cancel",
-    "review.noReviews": "No reviews yet",
   },
 
   de: {
@@ -396,12 +356,6 @@ export const translations: Record<Language, Record<string, string>> = {
     "auth.passwordMismatch": "Passwörter stimmen nicht überein",
     "auth.loginRequiredTitle": "Anmeldung erforderlich",
     "auth.loginRequired": "Sie müssen sich anmelden, um einen Termin zu buchen",
-    "auth.forgotPassword": "Passwort vergessen?",
-    "auth.forgotPasswordDesc": "Geben Sie Ihre E-Mail ein und wir senden Ihnen einen Link zum Zurücksetzen Ihres Passworts",
-    "auth.sendResetLink": "Link senden",
-    "auth.resetPasswordSuccess": "Der Link zum Zurücksetzen des Passworts wurde an Ihre E-Mail gesendet",
-    "auth.enterEmail": "Bitte geben Sie Ihre E-Mail ein",
-    "auth.backToLogin": "Zurück zur Anmeldung",
 
     // CTA Success
     "cta.teacherRegisterSuccess": "Ihre Bewerbung wurde zur Überprüfung an den Administrator gesendet.",
@@ -477,19 +431,5 @@ export const translations: Record<Language, Record<string, string>> = {
     "onboarding.submit": "Antrag einreichen",
     "onboarding.success": "Antrag erfolgreich eingereicht!",
     "onboarding.loginRequired": "Sie müssen angemeldet sein, um eine Lehrerbewerbung einzureichen",
-
-    // Reviews
-    "review.reviews": "Bewertungen",
-    "review.writeReview": "Bewertung schreiben",
-    "review.yourRating": "Ihre Bewertung",
-    "review.yourComment": "Ihr Kommentar",
-    "review.commentPlaceholder": "Teilen Sie Ihre Erfahrung...",
-    "review.submit": "Bewertung absenden",
-    "review.submitting": "Wird gesendet...",
-    "review.selectRating": "Bitte wählen Sie eine Bewertung",
-    "review.alreadyReviewed": "Sie haben diesen Lehrer bereits bewertet",
-    "review.submitError": "Beim Absenden der Bewertung ist ein Fehler aufgetreten",
-    "review.cancel": "Abbrechen",
-    "review.noReviews": "Noch keine Bewertungen",
   },
 };

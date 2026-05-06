@@ -8,12 +8,13 @@ import PrimaryButton from "@/components/atoms/PrimaryButton";
 import SecondaryButton from "@/components/atoms/SecondaryButton";
 import { ShieldX, Trash2, Check, X } from "lucide-react";
 import {
-  getTeachers,
   getAllTeachers,
   updateTeacher,
   deleteTeacher as deleteTeacherService,
 } from "@/services/teacherService";
 import type { TeacherRow } from "@/services/teacherService";
+
+const ADMIN_EMAIL = "noahalsamawi688@gmail.com";
 
 function mapRowToTeacher(row: TeacherRow, index: number): Teacher {
   return {
@@ -34,39 +35,59 @@ function mapRowToTeacher(row: TeacherRow, index: number): Teacher {
 
 export default function AdminDashboard() {
   const { t, lang } = useLanguage();
-  const { userName, user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [teacherRows, setTeacherRows] = useState<TeacherRow[]>([]);
   const [teacherList, setTeacherList] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
   const [announcement, setAnnouncement] = useState("");
   const [toast, setToast] = useState("");
 
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(""), 3000);
+  };
+
   useEffect(() => {
+    // Don't fetch until auth is resolved
+    if (authLoading) return;
+    if (user?.email !== ADMIN_EMAIL) {
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
     async function fetchAll() {
       try {
         const rows = await getAllTeachers();
         if (!cancelled) {
           setTeacherRows(rows);
-          if (rows.length > 0) {
-            setTeacherList(rows.map((r, i) => mapRowToTeacher(r, i)));
-          } else {
-            setTeacherList(mockTeachers);
-          }
+          setTeacherList(rows.length > 0 ? rows.map((r, i) => mapRowToTeacher(r, i)) : mockTeachers);
         }
-      } catch {
-        if (!cancelled) {
-          setTeacherList(mockTeachers);
-        }
+      } catch (err) {
+        console.error('[Admin] fetchAll error:', err);
+        if (!cancelled) setTeacherList(mockTeachers);
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
     fetchAll();
     return () => { cancelled = true; };
-  }, []);
+  }, [authLoading, user]);
 
-  if (user?.email !== "noahalsamawi688@gmail.com") {
+  // Show spinner while auth is resolving
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#FDF8F0]">
+        <Navbar />
+        <div className="flex justify-center items-center py-20">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#C8956C]"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Only block AFTER auth has loaded
+  if (user?.email !== ADMIN_EMAIL) {
     return (
       <div className="min-h-screen bg-[#FDF8F0]">
         <Navbar />
@@ -79,28 +100,21 @@ export default function AdminDashboard() {
     );
   }
 
-  const findRowId = (index: number): string | null => {
-    return teacherRows[index]?.id ?? null;
-  };
+  const findRowId = (index: number): string | null => teacherRows[index]?.id ?? null;
 
   const togglePro = async (index: number) => {
     const rowId = findRowId(index);
     const teacher = teacherList[index];
     if (!teacher) return;
-
     const newValue = !teacher.is_pro;
-    setTeacherList((prev) =>
-      prev.map((t, i) => (i === index ? { ...t, is_pro: newValue } : t))
-    );
-
+    setTeacherList((prev) => prev.map((t, i) => (i === index ? { ...t, is_pro: newValue } : t)));
     if (rowId) {
       try {
         await updateTeacher(rowId, { is_pro: newValue });
-        setToast("Teacher updated");
-      } catch {
-        setTeacherList((prev) =>
-          prev.map((t, i) => (i === index ? { ...t, is_pro: !newValue } : t))
-        );
+        showToast("Teacher updated");
+      } catch (err) {
+        console.error('[Admin] togglePro error:', err);
+        setTeacherList((prev) => prev.map((t, i) => (i === index ? { ...t, is_pro: !newValue } : t)));
       }
     }
   };
@@ -109,20 +123,15 @@ export default function AdminDashboard() {
     const rowId = findRowId(index);
     const teacher = teacherList[index];
     if (!teacher) return;
-
     const newValue = !teacher.featured;
-    setTeacherList((prev) =>
-      prev.map((t, i) => (i === index ? { ...t, featured: newValue } : t))
-    );
-
+    setTeacherList((prev) => prev.map((t, i) => (i === index ? { ...t, featured: newValue } : t)));
     if (rowId) {
       try {
         await updateTeacher(rowId, { featured: newValue });
-        setToast("Teacher updated");
-      } catch {
-        setTeacherList((prev) =>
-          prev.map((t, i) => (i === index ? { ...t, featured: !newValue } : t))
-        );
+        showToast("Teacher updated");
+      } catch (err) {
+        console.error('[Admin] toggleFeatured error:', err);
+        setTeacherList((prev) => prev.map((t, i) => (i === index ? { ...t, featured: !newValue } : t)));
       }
     }
   };
@@ -130,15 +139,13 @@ export default function AdminDashboard() {
   const approveTeacher = async (index: number) => {
     const rowId = findRowId(index);
     if (!rowId) return;
-
     try {
       await updateTeacher(rowId, { approved: true });
-      setToast("Teacher approved");
-      setTeacherRows((prev) =>
-        prev.map((r, i) => (i === index ? { ...r, approved: true } : r))
-      );
-    } catch {
-      // silently fail
+      showToast("Teacher approved");
+      setTeacherRows((prev) => prev.map((r, i) => (i === index ? { ...r, approved: true } : r)));
+    } catch (err) {
+      console.error('[Admin] approveTeacher error:', err);
+      showToast("Error approving teacher — check console");
     }
   };
 
@@ -148,14 +155,14 @@ export default function AdminDashboard() {
       setTeacherList((prev) => prev.filter((_, i) => i !== index));
       return;
     }
-
     try {
       await deleteTeacherService(rowId);
-      setToast("Teacher deleted");
+      showToast("Teacher deleted");
       setTeacherList((prev) => prev.filter((_, i) => i !== index));
       setTeacherRows((prev) => prev.filter((_, i) => i !== index));
-    } catch {
-      // silently fail
+    } catch (err) {
+      console.error('[Admin] deleteTeacher error:', err);
+      showToast("Error deleting teacher — check console");
     }
   };
 
@@ -205,9 +212,7 @@ export default function AdminDashboard() {
                       <button
                         onClick={() => togglePro(index)}
                         className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
-                          teacher.is_pro
-                            ? "bg-[#DCA842] text-white"
-                            : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                          teacher.is_pro ? "bg-[#DCA842] text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                         }`}
                       >
                         {teacher.is_pro ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
@@ -218,9 +223,7 @@ export default function AdminDashboard() {
                       <button
                         onClick={() => toggleFeatured(index)}
                         className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
-                          teacher.featured
-                            ? "bg-[#2F7A5B] text-white"
-                            : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                          teacher.featured ? "bg-[#2F7A5B] text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                         }`}
                       >
                         {teacher.featured ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
@@ -228,10 +231,7 @@ export default function AdminDashboard() {
                       </button>
                     </td>
                     <td className="px-6 py-4">
-                      <SecondaryButton
-                        className="text-xs px-3 py-1"
-                        onClick={() => approveTeacher(index)}
-                      >
+                      <SecondaryButton className="text-xs px-3 py-1" onClick={() => approveTeacher(index)}>
                         <Check className="w-3 h-3 me-1" />
                         {t("admin.approve")}
                       </SecondaryButton>
@@ -263,14 +263,15 @@ export default function AdminDashboard() {
             placeholder={t("admin.announcements")}
           />
           <div className="mt-4 flex justify-end">
-            <PrimaryButton onClick={() => {}}>
+            <PrimaryButton onClick={() => showToast("Announcement saved")}>
               {t("admin.save")}
             </PrimaryButton>
           </div>
         </div>
       </div>
+
       {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#2F7A5B] text-white px-6 py-3 rounded-lg shadow-lg text-sm font-medium z-50">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#2F7A5B] text-white px-6 py-3 rounded-lg shadow-lg text-sm font-medium z-50 animate-in fade-in slide-in-from-bottom-2">
           {toast}
         </div>
       )}

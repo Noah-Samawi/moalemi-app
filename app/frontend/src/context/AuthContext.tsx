@@ -11,7 +11,6 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name: string) => Promise<void>;
   signOut: () => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
   login: (name: string) => void;
   logout: () => void;
 }
@@ -19,7 +18,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { user, session, loading, isAuthenticated, userName, signIn, signUp, signOut, resetPassword } = useSupabaseAuth();
+  const { user, session, loading, isAuthenticated, userName, signIn, signUp, signOut } = useSupabaseAuth();
 
   // Legacy compat: login/logout are no-ops since Supabase handles state
   const login = (_name: string) => {
@@ -32,7 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, session, loading, isAuthenticated, userName, signIn, signUp, signOut, resetPassword, login, logout }}
+      value={{ user, session, loading, isAuthenticated, userName, signIn, signUp, signOut, login, logout }}
     >
       {children}
     </AuthContext.Provider>

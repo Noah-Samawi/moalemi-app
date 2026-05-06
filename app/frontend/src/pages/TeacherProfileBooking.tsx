@@ -6,6 +6,7 @@ import BookingFormGroup from "@/components/molecules/BookingFormGroup";
 import BookingConfirmationToast from "@/components/molecules/BookingConfirmationToast";
 import AuthModal from "@/components/organisms/AuthModal";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useAuth } from "@/context/AuthContext";
 import type { Teacher } from "@/data/mockData";
 
 interface TeacherProfileBookingProps {
@@ -22,7 +23,8 @@ interface BookingConfirmation {
 }
 
 export default function TeacherProfileBooking({ teacher }: TeacherProfileBookingProps) {
-  const { t, lang, isAuthenticated, login } = useLanguage();
+  const { t, lang } = useLanguage();
+  const { isAuthenticated } = useAuth();
   const [confirmation, setConfirmation] = useState<BookingConfirmation | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authWarning, setAuthWarning] = useState(false);
@@ -51,8 +53,7 @@ export default function TeacherProfileBooking({ teacher }: TeacherProfileBooking
     });
   };
 
-  const handleAuthSuccess = (name: string) => {
-    login(name);
+  const handleAuthSuccess = (_name: string) => {
     setAuthModalOpen(false);
     setAuthWarning(false);
   };
