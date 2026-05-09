@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import { translations, type Language } from "./translations";
 
 interface LanguageContextType {
@@ -10,9 +10,17 @@ interface LanguageContextType {
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+const STORAGE_KEY = "moalemi-language";
+
+function getInitialLanguage(): Language {
+  if (typeof window === "undefined") return "de";
+  const saved = window.localStorage.getItem(STORAGE_KEY);
+  if (saved === "ar" || saved === "en" || saved === "de") return saved;
+  return "de";
+}
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Language>("ar");
+  const [lang, setLang] = useState<Language>(getInitialLanguage);
 
   const dir = lang === "ar" ? "rtl" : "ltr";
 
@@ -25,15 +33,20 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const toggleLanguage = useCallback(() => {
     setLang((prev) => {
-      if (prev === "ar") return "en";
-      if (prev === "en") return "de";
-      return "ar";
+      return prev === "ar" ? "de" : "ar";
     });
   }, []);
 
   const setLanguage = useCallback((newLang: Language) => {
     setLang(newLang);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(STORAGE_KEY, lang);
+    document.documentElement.lang = lang;
+    document.documentElement.dir = dir;
+  }, [lang, dir]);
 
   return (
     <LanguageContext.Provider value={{ lang, dir, t, toggleLanguage, setLanguage }}>

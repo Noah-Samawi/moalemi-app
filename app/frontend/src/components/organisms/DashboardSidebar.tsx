@@ -2,6 +2,7 @@ import { useState } from "react";
 import { BookOpen, History, Settings, ChevronRight, ChevronLeft } from "lucide-react";
 import AvatarAtom from "@/components/atoms/AvatarAtom";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useAuth } from "@/context/AuthContext";
 
 interface DashboardSidebarProps {
   userName?: string;
@@ -17,7 +18,8 @@ export default function DashboardSidebar({
   onTabChange,
 }: DashboardSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const { t, dir, isAuthenticated, userName: contextUserName } = useLanguage();
+  const { t, dir } = useLanguage();
+  const { userName: contextUserName } = useAuth();
 
   const navItems = [
     { id: "upcoming", label: t("dashboard.upcoming"), icon: BookOpen },

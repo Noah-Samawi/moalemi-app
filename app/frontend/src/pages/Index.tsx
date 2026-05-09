@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/organisms/Navbar";
 import HeroSection from "@/components/organisms/HeroSection";
 import FeaturedTeachersGrid from "@/components/organisms/FeaturedTeachersGrid";
@@ -6,13 +7,21 @@ import FeatureItem from "@/components/molecules/FeatureItem";
 import SecondaryButton from "@/components/atoms/SecondaryButton";
 import { features } from "@/data/mockData";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { getLatestContentByType } from "@/services/contentService";
 
 export default function Index() {
   const { t, lang } = useLanguage();
+  const navigate = useNavigate();
   const [showTeacherToast, setShowTeacherToast] = useState(false);
+  const [announcement, setAnnouncement] = useState("");
+  const [advertisingTitle, setAdvertisingTitle] = useState("");
+  const [advertisingBody, setAdvertisingBody] = useState("");
+  const [extraFeatureTitle, setExtraFeatureTitle] = useState("");
+  const [extraFeatureBody, setExtraFeatureBody] = useState("");
 
   const handleJoinAsTeacher = () => {
     setShowTeacherToast(true);
+    navigate("/onboarding");
   };
 
   useEffect(() => {
@@ -21,10 +30,40 @@ export default function Index() {
     return () => clearTimeout(timer);
   }, [showTeacherToast]);
 
+  useEffect(() => {
+    let cancelled = false;
+    async function loadContent() {
+      try {
+        const [announcementItem, featureItem, adItem] = await Promise.all([
+          getLatestContentByType("announcement"),
+          getLatestContentByType("feature"),
+          getLatestContentByType("advertising"),
+        ]);
+        if (cancelled) return;
+        setAnnouncement(lang === "ar" ? (announcementItem?.body_ar || "") : (announcementItem?.body_de || ""));
+        setAdvertisingTitle(lang === "ar" ? (adItem?.title_ar || "") : (adItem?.title_de || ""));
+        setAdvertisingBody(lang === "ar" ? (adItem?.body_ar || "") : (adItem?.body_de || ""));
+        setExtraFeatureTitle(lang === "ar" ? (featureItem?.title_ar || "") : (featureItem?.title_de || ""));
+        setExtraFeatureBody(lang === "ar" ? (featureItem?.body_ar || "") : (featureItem?.body_de || ""));
+      } catch (err) {
+        console.error("[Index] loadContent error:", err);
+      }
+    }
+    loadContent();
+    return () => {
+      cancelled = true;
+    };
+  }, [lang]);
+
   return (
     <div className="min-h-screen">
       <Navbar />
       <HeroSection />
+      {announcement && (
+        <section className="bg-[#2F7A5B] text-white py-3 px-4 text-center text-sm font-medium">
+          {announcement}
+        </section>
+      )}
 
       {/* Features Section */}
       <section className="py-16 bg-white">
@@ -42,6 +81,12 @@ export default function Index() {
               />
             ))}
           </div>
+          {extraFeatureTitle && (
+            <div className="mt-8 bg-[#F7F1E4] border border-[#DCA842]/30 rounded-xl p-5">
+              <h3 className="text-lg font-semibold text-[#1A1A2E] mb-2">{extraFeatureTitle}</h3>
+              <p className="text-sm text-gray-700">{extraFeatureBody}</p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -76,6 +121,17 @@ export default function Index() {
           )}
         </div>
       </section>
+
+      {advertisingTitle && (
+        <section className="bg-white py-10">
+          <div className="max-w-5xl mx-auto px-4">
+            <div className="rounded-xl border border-[#2F7A5B]/20 bg-[#FDF8F0] p-6">
+              <h3 className="text-2xl font-bold text-[#1A1A2E] mb-2">{advertisingTitle}</h3>
+              <p className="text-gray-700">{advertisingBody}</p>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Footer */}
       <footer className="bg-[#1A1A2E] text-gray-400 py-8 text-center">

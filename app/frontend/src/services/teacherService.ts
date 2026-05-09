@@ -8,6 +8,7 @@ interface TeacherRow {
   name_en: string;
   name_de: string;
   avatar: string | null;
+  banner: string | null;
   specializations: TrilingualText[];
   bio_ar: string | null;
   bio_en: string | null;
@@ -23,11 +24,13 @@ interface TeacherRow {
   created_at: string;
 }
 
-function mapRowToTeacher(row: TeacherRow, index?: number): Teacher {
+function mapRowToTeacher(row: TeacherRow): Teacher {
   return {
-    id: index ?? 0,
+    id: row.id,
+    user_id: row.user_id || undefined,
     name: { ar: row.name_ar, en: row.name_en, de: row.name_de },
     avatar: row.avatar || '',
+    banner: row.banner || '',
     specializations: row.specializations || [],
     experience: row.experience,
     hourlyRate: row.hourly_rate,
@@ -49,7 +52,7 @@ export async function getTeachers(): Promise<Teacher[]> {
   if (error) throw error;
   if (!data) return [];
 
-  return data.map((row: TeacherRow, i: number) => mapRowToTeacher(row, i));
+  return data.map((row: TeacherRow) => mapRowToTeacher(row));
 }
 
 export async function getAllTeachers(): Promise<TeacherRow[]> {
@@ -66,12 +69,23 @@ export async function getTeacherById(id: string): Promise<Teacher | null> {
     .from('teachers')
     .select('*')
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
   if (!data) return null;
 
   return mapRowToTeacher(data as TeacherRow);
+}
+
+export async function getTeacherByUserId(userId: string): Promise<TeacherRow | null> {
+  const { data, error } = await supabase
+    .from('teachers')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data as TeacherRow | null) ?? null;
 }
 
 export async function getTeacherRowById(id: string): Promise<TeacherRow | null> {
@@ -97,6 +111,7 @@ interface CreateTeacherData {
   hourly_rate: number;
   experience: number;
   avatar?: string;
+  banner?: string;
 }
 
 export async function createTeacher(data: CreateTeacherData) {

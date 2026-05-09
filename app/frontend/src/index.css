@@ -6,33 +6,33 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 40 50% 98%;
+    --foreground: 157 44% 16%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 157 44% 16%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 157 44% 16%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 157 44% 33%;
+    --primary-foreground: 40 60% 97%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 42 65% 56%;
+    --secondary-foreground: 157 44% 18%;
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 40 35% 94%;
+    --accent-foreground: 157 44% 22%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 156 18% 86%;
+    --input: 156 18% 86%;
+    --ring: 157 44% 33%;
 
     --radius: 0.5rem;
 
@@ -104,6 +104,10 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Cairo', sans-serif;
-    direction: rtl;
+    direction: ltr;
+  }
+
+  .app-shell {
+    @apply min-h-screen bg-[#FDF8F0] text-[#1A1A2E];
   }
 }

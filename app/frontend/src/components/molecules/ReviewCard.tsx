@@ -1,12 +1,15 @@
 import StarRating from "@/components/atoms/StarRating";
 import type { ReviewRow } from "@/services/reviewService";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface ReviewCardProps {
   review: ReviewRow;
 }
 
 export default function ReviewCard({ review }: ReviewCardProps) {
-  const dateStr = new Date(review.created_at).toLocaleDateString("ar-EG", {
+  const { lang, t } = useLanguage();
+  const locale = lang === "ar" ? "ar-EG" : lang === "de" ? "de-DE" : "en-US";
+  const dateStr = new Date(review.created_at).toLocaleDateString(locale, {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -21,7 +24,7 @@ export default function ReviewCard({ review }: ReviewCardProps) {
               {review.user_name?.charAt(0) || "?"}
             </div>
             <span className="font-medium text-[#1A1A2E] text-sm">
-              {review.user_name || "مستخدم"}
+              {review.user_name || t("review.userFallback")}
             </span>
           </div>
           <StarRating rating={review.rating} />

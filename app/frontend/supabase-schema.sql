@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS teachers (
   name_en TEXT NOT NULL,
   name_de TEXT NOT NULL,
   avatar TEXT,
+  banner TEXT,
   specializations JSONB DEFAULT '[]'::jsonb,
   bio_ar TEXT,
   bio_en TEXT,
@@ -60,6 +61,36 @@ CREATE TABLE IF NOT EXISTS announcements (
 );
 
 -- ============================================
+-- SITE CONTENT TABLE (FEATURES / ADS / ANNOUNCEMENTS)
+-- ============================================
+CREATE TABLE IF NOT EXISTS site_content (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  content_type TEXT NOT NULL CHECK (content_type IN ('announcement', 'feature', 'advertising')),
+  title_ar TEXT,
+  title_de TEXT,
+  body_ar TEXT,
+  body_de TEXT,
+  is_active BOOLEAN DEFAULT true,
+  created_by TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE OR REPLACE FUNCTION touch_site_content_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_touch_site_content_updated_at ON site_content;
+CREATE TRIGGER trg_touch_site_content_updated_at
+  BEFORE UPDATE ON site_content
+  FOR EACH ROW
+  EXECUTE FUNCTION touch_site_content_updated_at();
+
+-- ============================================
 -- INDEXES
 -- ============================================
 CREATE INDEX IF NOT EXISTS idx_teachers_user_id ON teachers(user_id);
@@ -68,6 +99,7 @@ CREATE INDEX IF NOT EXISTS idx_teachers_featured ON teachers(featured);
 CREATE INDEX IF NOT EXISTS idx_bookings_student_id ON bookings(student_id);
 CREATE INDEX IF NOT EXISTS idx_bookings_teacher_id ON bookings(teacher_id);
 CREATE INDEX IF NOT EXISTS idx_announcements_active ON announcements(active);
+CREATE INDEX IF NOT EXISTS idx_site_content_type_active ON site_content(content_type, is_active);
 
 -- ============================================
 -- ROW LEVEL SECURITY
@@ -80,9 +112,12 @@ DROP POLICY IF EXISTS "teachers_insert_own" ON teachers;
 DROP POLICY IF EXISTS "teachers_update_own_or_admin" ON teachers;
 DROP POLICY IF EXISTS "teachers_admin_delete" ON teachers;
 DROP POLICY IF EXISTS "teachers_admin_read_all" ON teachers;
+DROP POLICY IF EXISTS "teachers_read_own" ON teachers;
 
 -- Public/anon: only see approved teachers
 CREATE POLICY "teachers_read_approved" ON teachers FOR SELECT USING (approved = true);
+-- Authenticated teacher: can read own profile even if unapproved
+CREATE POLICY "teachers_read_own" ON teachers FOR SELECT TO authenticated USING (auth.uid() = user_id);
 -- Admin: see all teachers (including unapproved) for admin dashboard
 CREATE POLICY "teachers_admin_read_all" ON teachers FOR SELECT TO authenticated USING (auth.jwt() ->> 'email' = 'noahalsamawi688@gmail.com');
 -- Authenticated: insert own row
@@ -117,6 +152,43 @@ DROP POLICY IF EXISTS "announcements_admin_manage" ON announcements;
 CREATE POLICY "announcements_read_active" ON announcements FOR SELECT USING (active = true);
 -- Admin: full CRUD on announcements
 CREATE POLICY "announcements_admin_all" ON announcements FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'noahalsamawi688@gmail.com') WITH CHECK (auth.jwt() ->> 'email' = 'noahalsamawi688@gmail.com');
+
+-- Site content: drop and recreate policies
+ALTER TABLE site_content ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "site_content_read_active" ON site_content;
+DROP POLICY IF EXISTS "site_content_admin_all" ON site_content;
+
+CREATE POLICY "site_content_read_active" ON site_content FOR SELECT USING (is_active = true);
+CREATE POLICY "site_content_admin_all" ON site_content FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'noahalsamawi688@gmail.com') WITH CHECK (auth.jwt() ->> 'email' = 'noahalsamawi688@gmail.com');
+
+-- ============================================
+-- STORAGE: TEACHER MEDIA (avatars / banners)
+-- ============================================
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('avatars', 'avatars', true)
+ON CONFLICT (id) DO NOTHING;
+
+DROP POLICY IF EXISTS "teacher_media_read_public" ON storage.objects;
+DROP POLICY IF EXISTS "teacher_media_auth_insert" ON storage.objects;
+DROP POLICY IF EXISTS "teacher_media_owner_or_admin_delete" ON storage.objects;
+
+CREATE POLICY "teacher_media_read_public"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'avatars');
+
+CREATE POLICY "teacher_media_auth_insert"
+ON storage.objects FOR INSERT TO authenticated
+WITH CHECK (bucket_id = 'avatars');
+
+CREATE POLICY "teacher_media_owner_or_admin_delete"
+ON storage.objects FOR DELETE TO authenticated
+USING (
+  bucket_id = 'avatars'
+  AND (
+    auth.uid()::text = (storage.foldername(name))[1]
+    OR auth.jwt() ->> 'email' = 'noahalsamawi688@gmail.com'
+  )
+);
 
 -- ============================================
 -- SEED DATA (4 mock teachers)

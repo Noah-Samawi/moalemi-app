@@ -13,12 +13,14 @@ import {
   deleteTeacher as deleteTeacherService,
 } from "@/services/teacherService";
 import type { TeacherRow } from "@/services/teacherService";
+import { createContentItem, getLatestContentByType } from "@/services/contentService";
+import { deleteTeacherImage, extractStoragePathFromUrl, uploadTeacherImage } from "@/services/storageService";
 
 const ADMIN_EMAIL = "noahalsamawi688@gmail.com";
 
 function mapRowToTeacher(row: TeacherRow, index: number): Teacher {
   return {
-    id: index,
+    id: row.id,
     name: { ar: row.name_ar, en: row.name_en, de: row.name_de },
     avatar: row.avatar || "",
     specializations: row.specializations || [],
@@ -40,6 +42,16 @@ export default function AdminDashboard() {
   const [teacherList, setTeacherList] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
   const [announcement, setAnnouncement] = useState("");
+  const [announcementAr, setAnnouncementAr] = useState("");
+  const [featureTitleAr, setFeatureTitleAr] = useState("");
+  const [featureTitleDe, setFeatureTitleDe] = useState("");
+  const [featureBodyAr, setFeatureBodyAr] = useState("");
+  const [featureBodyDe, setFeatureBodyDe] = useState("");
+  const [adTitleAr, setAdTitleAr] = useState("");
+  const [adTitleDe, setAdTitleDe] = useState("");
+  const [adBodyAr, setAdBodyAr] = useState("");
+  const [adBodyDe, setAdBodyDe] = useState("");
+  const [savingContent, setSavingContent] = useState(false);
   const [toast, setToast] = useState("");
 
   const showToast = (msg: string) => {
@@ -58,10 +70,25 @@ export default function AdminDashboard() {
     let cancelled = false;
     async function fetchAll() {
       try {
-        const rows = await getAllTeachers();
+        const [rows, announcementItem, featureItem, adItem] = await Promise.all([
+          getAllTeachers(),
+          getLatestContentByType("announcement").catch(() => null),
+          getLatestContentByType("feature").catch(() => null),
+          getLatestContentByType("advertising").catch(() => null),
+        ]);
         if (!cancelled) {
           setTeacherRows(rows);
           setTeacherList(rows.length > 0 ? rows.map((r, i) => mapRowToTeacher(r, i)) : mockTeachers);
+          setAnnouncement(announcementItem?.body_de || "");
+          setAnnouncementAr(announcementItem?.body_ar || "");
+          setFeatureTitleAr(featureItem?.title_ar || "");
+          setFeatureTitleDe(featureItem?.title_de || "");
+          setFeatureBodyAr(featureItem?.body_ar || "");
+          setFeatureBodyDe(featureItem?.body_de || "");
+          setAdTitleAr(adItem?.title_ar || "");
+          setAdTitleDe(adItem?.title_de || "");
+          setAdBodyAr(adItem?.body_ar || "");
+          setAdBodyDe(adItem?.body_de || "");
         }
       } catch (err) {
         console.error('[Admin] fetchAll error:', err);
@@ -111,7 +138,7 @@ export default function AdminDashboard() {
     if (rowId) {
       try {
         await updateTeacher(rowId, { is_pro: newValue });
-        showToast("Teacher updated");
+        showToast(t("admin.teacherUpdated"));
       } catch (err) {
         console.error('[Admin] togglePro error:', err);
         setTeacherList((prev) => prev.map((t, i) => (i === index ? { ...t, is_pro: !newValue } : t)));
@@ -128,7 +155,7 @@ export default function AdminDashboard() {
     if (rowId) {
       try {
         await updateTeacher(rowId, { featured: newValue });
-        showToast("Teacher updated");
+        showToast(t("admin.teacherUpdated"));
       } catch (err) {
         console.error('[Admin] toggleFeatured error:', err);
         setTeacherList((prev) => prev.map((t, i) => (i === index ? { ...t, featured: !newValue } : t)));
@@ -141,11 +168,11 @@ export default function AdminDashboard() {
     if (!rowId) return;
     try {
       await updateTeacher(rowId, { approved: true });
-      showToast("Teacher approved");
+      showToast(t("admin.teacherApproved"));
       setTeacherRows((prev) => prev.map((r, i) => (i === index ? { ...r, approved: true } : r)));
     } catch (err) {
       console.error('[Admin] approveTeacher error:', err);
-      showToast("Error approving teacher — check console");
+      showToast(t("admin.actionFailed"));
     }
   };
 
@@ -157,12 +184,103 @@ export default function AdminDashboard() {
     }
     try {
       await deleteTeacherService(rowId);
-      showToast("Teacher deleted");
+      showToast(t("admin.teacherDeleted"));
       setTeacherList((prev) => prev.filter((_, i) => i !== index));
       setTeacherRows((prev) => prev.filter((_, i) => i !== index));
     } catch (err) {
       console.error('[Admin] deleteTeacher error:', err);
-      showToast("Error deleting teacher — check console");
+      showToast(t("admin.actionFailed"));
+    }
+  };
+
+  const saveAnnouncement = async () => {
+    setSavingContent(true);
+    try {
+      await createContentItem({
+        content_type: "announcement",
+        body_ar: announcementAr || announcement,
+        body_de: announcement || announcementAr,
+        created_by: user?.email ?? ADMIN_EMAIL,
+      });
+      showToast(t("admin.contentSaved"));
+    } catch (err) {
+      console.error("[Admin] saveAnnouncement error:", err);
+      showToast(t("admin.actionFailed"));
+    } finally {
+      setSavingContent(false);
+    }
+  };
+
+  const saveFeature = async () => {
+    setSavingContent(true);
+    try {
+      await createContentItem({
+        content_type: "feature",
+        title_ar: featureTitleAr,
+        title_de: featureTitleDe,
+        body_ar: featureBodyAr,
+        body_de: featureBodyDe,
+        created_by: user?.email ?? ADMIN_EMAIL,
+      });
+      showToast(t("admin.contentSaved"));
+    } catch (err) {
+      console.error("[Admin] saveFeature error:", err);
+      showToast(t("admin.actionFailed"));
+    } finally {
+      setSavingContent(false);
+    }
+  };
+
+  const saveAd = async () => {
+    setSavingContent(true);
+    try {
+      await createContentItem({
+        content_type: "advertising",
+        title_ar: adTitleAr,
+        title_de: adTitleDe,
+        body_ar: adBodyAr,
+        body_de: adBodyDe,
+        created_by: user?.email ?? ADMIN_EMAIL,
+      });
+      showToast(t("admin.contentSaved"));
+    } catch (err) {
+      console.error("[Admin] saveAd error:", err);
+      showToast(t("admin.actionFailed"));
+    } finally {
+      setSavingContent(false);
+    }
+  };
+
+  const uploadTeacherAvatar = async (index: number, file?: File) => {
+    if (!file) return;
+    const row = teacherRows[index];
+    if (!row) return;
+    try {
+      const ownerId = row.user_id || row.id;
+      const { publicUrl } = await uploadTeacherImage({ userId: ownerId, file, type: "avatar" });
+      await updateTeacher(row.id, { avatar: publicUrl });
+      setTeacherList((prev) => prev.map((item, i) => (i === index ? { ...item, avatar: publicUrl } : item)));
+      setTeacherRows((prev) => prev.map((item, i) => (i === index ? { ...item, avatar: publicUrl } : item)));
+      showToast(t("admin.teacherUpdated"));
+    } catch (err) {
+      console.error("[Admin] uploadTeacherAvatar error:", err);
+      showToast(t("admin.actionFailed"));
+    }
+  };
+
+  const deleteTeacherAvatar = async (index: number) => {
+    const row = teacherRows[index];
+    if (!row || !row.avatar) return;
+    try {
+      const path = extractStoragePathFromUrl(row.avatar);
+      if (path) await deleteTeacherImage(path);
+      await updateTeacher(row.id, { avatar: null });
+      setTeacherList((prev) => prev.map((item, i) => (i === index ? { ...item, avatar: "" } : item)));
+      setTeacherRows((prev) => prev.map((item, i) => (i === index ? { ...item, avatar: null } : item)));
+      showToast(t("admin.teacherUpdated"));
+    } catch (err) {
+      console.error("[Admin] deleteTeacherAvatar error:", err);
+      showToast(t("admin.actionFailed"));
     }
   };
 
@@ -205,7 +323,27 @@ export default function AdminDashboard() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <img src={teacher.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
-                        <span className="font-medium text-[#1A1A2E]">{teacher.name[lang]}</span>
+                        <div className="flex flex-col gap-1">
+                          <span className="font-medium text-[#1A1A2E]">{teacher.name[lang]}</span>
+                          <div className="flex items-center gap-2">
+                            <label className="text-xs text-[#2F7A5B] cursor-pointer hover:underline">
+                              {t("admin.uploadImage")}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => uploadTeacherAvatar(index, e.target.files?.[0])}
+                              />
+                            </label>
+                            <button
+                              onClick={() => deleteTeacherAvatar(index)}
+                              className="text-xs text-red-600 hover:underline"
+                              type="button"
+                            >
+                              {t("admin.deleteImage")}
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -253,17 +391,105 @@ export default function AdminDashboard() {
         </div>
 
         {/* Announcements */}
-        <div className="bg-white rounded-xl shadow-md p-6">
+        <div className="bg-white rounded-xl shadow-md p-6 mb-8">
           <h2 className="text-xl font-semibold text-[#1A1A2E] mb-4">{t("admin.announcements")}</h2>
-          <textarea
-            value={announcement}
-            onChange={(e) => setAnnouncement(e.target.value)}
-            rows={4}
-            className="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B] focus:border-transparent resize-none"
-            placeholder={t("admin.announcements")}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <textarea
+              value={announcementAr}
+              onChange={(e) => setAnnouncementAr(e.target.value)}
+              rows={4}
+              className="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B] focus:border-transparent resize-none"
+              placeholder={t("admin.announcementAr")}
+              dir="rtl"
+            />
+            <textarea
+              value={announcement}
+              onChange={(e) => setAnnouncement(e.target.value)}
+              rows={4}
+              className="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B] focus:border-transparent resize-none"
+              placeholder={t("admin.announcementDe")}
+            />
+          </div>
           <div className="mt-4 flex justify-end">
-            <PrimaryButton onClick={() => showToast("Announcement saved")}>
+            <PrimaryButton onClick={saveAnnouncement} disabled={savingContent}>
+              {t("admin.save")}
+            </PrimaryButton>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+          <h2 className="text-xl font-semibold text-[#1A1A2E] mb-4">{t("admin.features")}</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input
+              className="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B] focus:border-transparent"
+              placeholder={t("admin.titleAr")}
+              value={featureTitleAr}
+              onChange={(e) => setFeatureTitleAr(e.target.value)}
+              dir="rtl"
+            />
+            <input
+              className="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B] focus:border-transparent"
+              placeholder={t("admin.titleDe")}
+              value={featureTitleDe}
+              onChange={(e) => setFeatureTitleDe(e.target.value)}
+            />
+            <textarea
+              className="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B] focus:border-transparent resize-none"
+              rows={3}
+              placeholder={t("admin.bodyAr")}
+              value={featureBodyAr}
+              onChange={(e) => setFeatureBodyAr(e.target.value)}
+              dir="rtl"
+            />
+            <textarea
+              className="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B] focus:border-transparent resize-none"
+              rows={3}
+              placeholder={t("admin.bodyDe")}
+              value={featureBodyDe}
+              onChange={(e) => setFeatureBodyDe(e.target.value)}
+            />
+          </div>
+          <div className="mt-4 flex justify-end">
+            <PrimaryButton onClick={saveFeature} disabled={savingContent}>
+              {t("admin.save")}
+            </PrimaryButton>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <h2 className="text-xl font-semibold text-[#1A1A2E] mb-4">{t("admin.advertising")}</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input
+              className="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B] focus:border-transparent"
+              placeholder={t("admin.titleAr")}
+              value={adTitleAr}
+              onChange={(e) => setAdTitleAr(e.target.value)}
+              dir="rtl"
+            />
+            <input
+              className="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B] focus:border-transparent"
+              placeholder={t("admin.titleDe")}
+              value={adTitleDe}
+              onChange={(e) => setAdTitleDe(e.target.value)}
+            />
+            <textarea
+              className="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B] focus:border-transparent resize-none"
+              rows={3}
+              placeholder={t("admin.bodyAr")}
+              value={adBodyAr}
+              onChange={(e) => setAdBodyAr(e.target.value)}
+              dir="rtl"
+            />
+            <textarea
+              className="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B] focus:border-transparent resize-none"
+              rows={3}
+              placeholder={t("admin.bodyDe")}
+              value={adBodyDe}
+              onChange={(e) => setAdBodyDe(e.target.value)}
+            />
+          </div>
+          <div className="mt-4 flex justify-end">
+            <PrimaryButton onClick={saveAd} disabled={savingContent}>
               {t("admin.save")}
             </PrimaryButton>
           </div>

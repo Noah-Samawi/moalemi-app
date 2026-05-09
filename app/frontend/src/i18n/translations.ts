@@ -89,6 +89,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "booking.totalPrice": "السعر الإجمالي",
     "booking.confirm": "تأكيد الحجز",
     "booking.selectTime": "اختر الوقت",
+    "booking.error": "تعذر إتمام الحجز. تحقق من تسجيل الدخول أو إعدادات قاعدة البيانات.",
 
     // Booking Confirmation
     "bookingConfirm.title": "تم تأكيد الحجز!",
@@ -105,6 +106,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "profile.about": "نبذة عن المعلم",
     "profile.services": "الخدمات",
     "profile.perHour": "/ساعة",
+    "profile.edit": "تعديل الملف الشخصي",
 
     // Dashboard
     "dashboard.title": "لوحة التحكم",
@@ -116,6 +118,12 @@ export const translations: Record<Language, Record<string, string>> = {
     "dashboard.joinLesson": "انضم للدرس",
     "dashboard.noLessons": "لا توجد دروس قادمة",
     "dashboard.user": "مستخدم",
+    "dashboard.joinSoon": "رابط الانضمام سيتوفر قبل موعد الدرس.",
+    "dashboard.role": "الدور",
+    "dashboard.status": "الحالة",
+    "dashboard.totalLessons": "إجمالي الدروس",
+    "dashboard.completedLessons": "الدروس المكتملة",
+    "dashboard.becomeTeacher": "كن معلماً",
 
     // Language
     "lang.ar": "العربية",
@@ -130,7 +138,22 @@ export const translations: Record<Language, Record<string, string>> = {
     "admin.approve": "موافقة",
     "admin.delete": "حذف",
     "admin.announcements": "الإعلانات",
+    "admin.features": "المزايا",
+    "admin.advertising": "الإعلانات الترويجية",
     "admin.save": "حفظ",
+    "admin.teacherUpdated": "تم تحديث بيانات المعلم",
+    "admin.teacherApproved": "تمت الموافقة على المعلم",
+    "admin.teacherDeleted": "تم حذف المعلم",
+    "admin.contentSaved": "تم حفظ المحتوى بنجاح",
+    "admin.actionFailed": "فشل تنفيذ العملية",
+    "admin.announcementAr": "الإعلان (عربي)",
+    "admin.announcementDe": "الإعلان (ألماني)",
+    "admin.titleAr": "العنوان (عربي)",
+    "admin.titleDe": "العنوان (ألماني)",
+    "admin.bodyAr": "الوصف (عربي)",
+    "admin.bodyDe": "الوصف (ألماني)",
+    "admin.uploadImage": "رفع صورة",
+    "admin.deleteImage": "حذف الصورة",
     "admin.accessDenied": "تم رفض الوصول",
     "admin.accessDeniedDesc": "ليس لديك صلاحية للوصول إلى هذه الصفحة.",
 
@@ -148,6 +171,8 @@ export const translations: Record<Language, Record<string, string>> = {
     "onboarding.submit": "إرسال الطلب",
     "onboarding.success": "تم إرسال الطلب بنجاح!",
     "onboarding.loginRequired": "يجب تسجيل الدخول لتقديم طلب الانضمام كمعلم",
+    "onboarding.loginRegister": "تسجيل الدخول / إنشاء حساب",
+    "onboarding.editTitle": "تعديل الملف الشخصي للمعلم",
 
     // Reviews
     "review.reviews": "تقييم",
@@ -162,6 +187,8 @@ export const translations: Record<Language, Record<string, string>> = {
     "review.submitError": "حدث خطأ أثناء إرسال التقييم",
     "review.cancel": "إلغاء",
     "review.noReviews": "لا توجد تقييمات بعد",
+    "review.userFallback": "مستخدم",
+    "review.selfBlocked": "لا يمكنك تقييم نفسك كمعلم.",
   },
 
   en: {
@@ -252,6 +279,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "booking.totalPrice": "Total Price",
     "booking.confirm": "Confirm Booking",
     "booking.selectTime": "Select Time",
+    "booking.error": "Could not complete booking. Please verify login and database setup.",
 
     // Booking Confirmation
     "bookingConfirm.title": "Booking Confirmed!",
@@ -268,6 +296,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "profile.about": "About the Teacher",
     "profile.services": "Services",
     "profile.perHour": "/hour",
+    "profile.edit": "Edit Profile",
 
     // Dashboard
     "dashboard.title": "Dashboard",
@@ -279,6 +308,12 @@ export const translations: Record<Language, Record<string, string>> = {
     "dashboard.joinLesson": "Join Lesson",
     "dashboard.noLessons": "No upcoming lessons",
     "dashboard.user": "User",
+    "dashboard.joinSoon": "Join link will be available shortly before lesson time.",
+    "dashboard.role": "Role",
+    "dashboard.status": "Status",
+    "dashboard.totalLessons": "Total Lessons",
+    "dashboard.completedLessons": "Completed Lessons",
+    "dashboard.becomeTeacher": "Become a Teacher",
 
     // Language
     "lang.ar": "العربية",
@@ -293,7 +328,22 @@ export const translations: Record<Language, Record<string, string>> = {
     "admin.approve": "Approve",
     "admin.delete": "Delete",
     "admin.announcements": "Announcements",
+    "admin.features": "Features",
+    "admin.advertising": "Advertising",
     "admin.save": "Save",
+    "admin.teacherUpdated": "Teacher updated",
+    "admin.teacherApproved": "Teacher approved",
+    "admin.teacherDeleted": "Teacher deleted",
+    "admin.contentSaved": "Content saved successfully",
+    "admin.actionFailed": "Action failed",
+    "admin.announcementAr": "Announcement (Arabic)",
+    "admin.announcementDe": "Announcement (German)",
+    "admin.titleAr": "Title (Arabic)",
+    "admin.titleDe": "Title (German)",
+    "admin.bodyAr": "Body (Arabic)",
+    "admin.bodyDe": "Body (German)",
+    "admin.uploadImage": "Upload image",
+    "admin.deleteImage": "Delete image",
     "admin.accessDenied": "Access Denied",
     "admin.accessDeniedDesc": "You do not have permission to access this page.",
 
@@ -311,6 +361,8 @@ export const translations: Record<Language, Record<string, string>> = {
     "onboarding.submit": "Submit Application",
     "onboarding.success": "Application submitted successfully!",
     "onboarding.loginRequired": "You must be logged in to submit a teacher application",
+    "onboarding.loginRegister": "Login / Register",
+    "onboarding.editTitle": "Edit Teacher Profile",
 
     // Reviews
     "review.reviews": "reviews",
@@ -325,6 +377,8 @@ export const translations: Record<Language, Record<string, string>> = {
     "review.submitError": "An error occurred while submitting your review",
     "review.cancel": "Cancel",
     "review.noReviews": "No reviews yet",
+    "review.userFallback": "User",
+    "review.selfBlocked": "You cannot review yourself as a teacher.",
   },
 
   de: {
@@ -415,6 +469,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "booking.totalPrice": "Gesamtpreis",
     "booking.confirm": "Buchung bestätigen",
     "booking.selectTime": "Zeit wählen",
+    "booking.error": "Buchung konnte nicht abgeschlossen werden. Bitte Login und Datenbank-Konfiguration prüfen.",
 
     // Booking Confirmation
     "bookingConfirm.title": "Buchung bestätigt!",
@@ -431,6 +486,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "profile.about": "Über den Lehrer",
     "profile.services": "Dienstleistungen",
     "profile.perHour": "/Stunde",
+    "profile.edit": "Profil bearbeiten",
 
     // Dashboard
     "dashboard.title": "Dashboard",
@@ -442,6 +498,12 @@ export const translations: Record<Language, Record<string, string>> = {
     "dashboard.joinLesson": "Stunde beitreten",
     "dashboard.noLessons": "Keine kommenden Stunden",
     "dashboard.user": "Benutzer",
+    "dashboard.joinSoon": "Der Beitrittslink wird kurz vor Unterrichtsbeginn verfügbar.",
+    "dashboard.role": "Rolle",
+    "dashboard.status": "Status",
+    "dashboard.totalLessons": "Gesamtstunden",
+    "dashboard.completedLessons": "Abgeschlossene Stunden",
+    "dashboard.becomeTeacher": "Lehrer werden",
 
     // Language
     "lang.ar": "العربية",
@@ -456,7 +518,22 @@ export const translations: Record<Language, Record<string, string>> = {
     "admin.approve": "Genehmigen",
     "admin.delete": "Löschen",
     "admin.announcements": "Ankündigungen",
+    "admin.features": "Merkmale",
+    "admin.advertising": "Werbeinhalte",
     "admin.save": "Speichern",
+    "admin.teacherUpdated": "Lehrer aktualisiert",
+    "admin.teacherApproved": "Lehrer genehmigt",
+    "admin.teacherDeleted": "Lehrer gelöscht",
+    "admin.contentSaved": "Inhalt erfolgreich gespeichert",
+    "admin.actionFailed": "Aktion fehlgeschlagen",
+    "admin.announcementAr": "Ankündigung (Arabisch)",
+    "admin.announcementDe": "Ankündigung (Deutsch)",
+    "admin.titleAr": "Titel (Arabisch)",
+    "admin.titleDe": "Titel (Deutsch)",
+    "admin.bodyAr": "Inhalt (Arabisch)",
+    "admin.bodyDe": "Inhalt (Deutsch)",
+    "admin.uploadImage": "Bild hochladen",
+    "admin.deleteImage": "Bild löschen",
     "admin.accessDenied": "Zugriff verweigert",
     "admin.accessDeniedDesc": "Sie haben keine Berechtigung für diese Seite.",
 
@@ -474,6 +551,8 @@ export const translations: Record<Language, Record<string, string>> = {
     "onboarding.submit": "Antrag einreichen",
     "onboarding.success": "Antrag erfolgreich eingereicht!",
     "onboarding.loginRequired": "Sie müssen angemeldet sein, um eine Lehrerbewerbung einzureichen",
+    "onboarding.loginRegister": "Anmelden / Registrieren",
+    "onboarding.editTitle": "Lehrerprofil bearbeiten",
 
     // Reviews
     "review.reviews": "Bewertungen",
@@ -488,5 +567,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "review.submitError": "Beim Absenden der Bewertung ist ein Fehler aufgetreten",
     "review.cancel": "Abbrechen",
     "review.noReviews": "Noch keine Bewertungen",
+    "review.userFallback": "Benutzer",
+    "review.selfBlocked": "Sie können sich als Lehrer nicht selbst bewerten.",
   },
 };

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import StarRating from "@/components/atoms/StarRating";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { createReview } from "@/services/reviewService";
 
@@ -36,6 +35,10 @@ export default function ReviewForm({ teacherId, onSubmitted }: ReviewFormProps) 
     } catch (err: any) {
       if (err?.code === "23505") {
         setError(t("review.alreadyReviewed"));
+      } else if (err?.message === "Teachers cannot review themselves") {
+        setError(t("review.selfBlocked"));
+      } else if (err?.message === "Teacher is not persisted yet") {
+        setError(t("review.submitError"));
       } else {
         setError(t("review.submitError"));
       }

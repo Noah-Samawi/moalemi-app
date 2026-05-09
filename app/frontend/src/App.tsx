@@ -12,7 +12,7 @@ function AppContent() {
   const { dir } = useLanguage();
 
   return (
-    <div dir={dir} className={dir === "rtl" ? "font-arabic" : "font-sans"}>
+    <div dir={dir} className={dir === "rtl" ? "font-arabic app-shell" : "font-sans app-shell"}>
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/teacher/:id" element={<TeacherProfile />} />

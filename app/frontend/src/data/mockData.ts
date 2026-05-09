@@ -6,9 +6,11 @@ export interface Service {
 }
 
 export interface Teacher {
-  id: number;
+  id: string | number;
+  user_id?: string;
   name: TrilingualText;
   avatar: string;
+  banner?: string;
   specializations: TrilingualText[];
   experience: number;
   hourlyRate: number;

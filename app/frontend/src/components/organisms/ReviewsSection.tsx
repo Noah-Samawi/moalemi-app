@@ -3,21 +3,23 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { getReviewsByTeacher, getUserReviewForTeacher, type ReviewRow } from "@/services/reviewService";
 import ReviewCard from "@/components/molecules/ReviewCard";
 import ReviewForm from "@/components/molecules/ReviewForm";
-import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 
 interface ReviewsSectionProps {
   teacherId: string;
+  teacherUserId?: string;
   rating: number;
   reviewsCount: number;
 }
 
-export default function ReviewsSection({ teacherId, rating, reviewsCount }: ReviewsSectionProps) {
+export default function ReviewsSection({ teacherId, teacherUserId, rating, reviewsCount }: ReviewsSectionProps) {
   const { t } = useLanguage();
+  const { user, isAuthenticated } = useAuth();
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
   const [userReview, setUserReview] = useState<ReviewRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const isSelfTeacher = !!user?.id && !!teacherUserId && user.id === teacherUserId;
 
   const fetchReviews = useCallback(async () => {
     try {
@@ -36,9 +38,6 @@ export default function ReviewsSection({ teacherId, rating, reviewsCount }: Revi
   }, [teacherId]);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setIsAuthenticated(!!user);
-    });
     fetchReviews();
   }, [fetchReviews]);
 
@@ -63,13 +62,17 @@ export default function ReviewsSection({ teacherId, rating, reviewsCount }: Revi
       </div>
 
       {/* Write review button / form */}
-      {isAuthenticated && !userReview && !showForm && (
+      {isAuthenticated && !isSelfTeacher && !userReview && !showForm && (
         <button
           onClick={() => setShowForm(true)}
           className="w-full border-2 border-dashed border-[#2F7A5B]/30 rounded-lg py-3 text-[#2F7A5B] font-medium text-sm hover:bg-[#2F7A5B]/5 transition-colors"
         >
           {t("review.writeReview")}
         </button>
+      )}
+
+      {isAuthenticated && isSelfTeacher && (
+        <p className="text-sm text-gray-500">{t("review.selfBlocked")}</p>
       )}
 
       {showForm && (

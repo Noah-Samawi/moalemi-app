@@ -1,12 +1,13 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Menu, Globe, LogOut, LayoutDashboard, Shield, GraduationCap, Check } from "lucide-react";
+import { Menu, LogOut, LayoutDashboard, Shield, GraduationCap } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import SecondaryButton from "@/components/atoms/SecondaryButton";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import type { Language } from "@/i18n/translations";
 import AuthModal from "@/components/organisms/AuthModal";
+import { getTeacherByUserId } from "@/services/teacherService";
 
 const languages: { code: Language; label: string }[] = [
   { code: "ar", label: "العربية" },
@@ -18,20 +19,29 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [authTab, setAuthTab] = useState<"login" | "register">("login");
-  const [langDropdown, setLangDropdown] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const { lang, t, setLanguage } = useLanguage();
+  const [isTeacher, setIsTeacher] = useState(false);
+  const { lang, t, setLanguage, dir } = useLanguage();
   const { isAuthenticated, userName, user, logout } = useAuth();
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setLangDropdown(false);
+    let cancelled = false;
+    async function loadTeacherStatus() {
+      if (!user?.id) {
+        setIsTeacher(false);
+        return;
       }
+      try {
+        const teacher = await getTeacherByUserId(user.id);
+        if (!cancelled) setIsTeacher(!!teacher);
+      } catch {
+        if (!cancelled) setIsTeacher(false);
+      }
+    }
+    loadTeacherStatus();
+    return () => {
+      cancelled = true;
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [user?.id]);
 
   const openLogin = () => {
     setAuthTab("login");
@@ -51,7 +61,7 @@ export default function Navbar() {
     await logout();
   };
 
-  const isAdmin = isAuthenticated && (userName?.toLowerCase().includes("noah") || user?.email?.includes("noah"));
+  const isAdmin = user?.email === "noahalsamawi688@gmail.com";
 
   const brandName = (
     <>
@@ -96,39 +106,29 @@ export default function Navbar() {
               >
                 {t("nav.teachers")}
               </a>
-              <Link
-                to="/onboarding"
-                className="text-[#1A1A2E] hover:text-[#2F7A5B] font-medium transition-colors flex items-center gap-1"
-              >
-                <GraduationCap className="w-4 h-4" />
-                {t("nav.onboarding")}
-              </Link>
-
-              {/* Language Dropdown */}
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  onClick={() => setLangDropdown(!langDropdown)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 hover:border-[#2F7A5B] hover:bg-[#2F7A5B]/5 transition-all text-sm font-medium text-[#1A1A2E]"
+              {!isTeacher && (
+                <Link
+                  to="/onboarding"
+                  className="text-[#1A1A2E] hover:text-[#2F7A5B] font-medium transition-colors flex items-center gap-1"
                 >
-                  <Globe className="w-4 h-4" />
-                  {languages.find((l) => l.code === lang)?.label}
-                </button>
-                {langDropdown && (
-                  <div className="absolute top-full mt-1 end-0 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[140px] z-50">
-                    {languages.map((l) => (
-                      <button
-                        key={l.code}
-                        onClick={() => { setLanguage(l.code); setLangDropdown(false); }}
-                        className="flex items-center justify-between w-full px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
-                      >
-                        <span className={lang === l.code ? "text-[#2F7A5B] font-semibold" : "text-[#1A1A2E]"}>
-                          {l.label}
-                        </span>
-                        {lang === l.code && <Check className="w-4 h-4 text-[#2F7A5B]" />}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                  <GraduationCap className="w-4 h-4" />
+                  {t("nav.onboarding")}
+                </Link>
+              )}
+
+              <div className="text-sm text-gray-600 flex items-center gap-2">
+                {languages.map((item, index) => (
+                  <span key={item.code} className="inline-flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setLanguage(item.code)}
+                      className={lang === item.code ? "text-[#2F7A5B] font-semibold" : "hover:text-[#2F7A5B]"}
+                    >
+                      {item.label}
+                    </button>
+                    {index < languages.length - 1 && <span className="text-gray-300">|</span>}
+                  </span>
+                ))}
               </div>
 
               {isAdmin && (
@@ -174,29 +174,19 @@ export default function Navbar() {
             </div>
 
             <div className="md:hidden flex items-center gap-2">
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  onClick={() => setLangDropdown(!langDropdown)}
-                  className="p-2 text-[#1A1A2E] hover:text-[#2F7A5B] transition-colors"
-                >
-                  <Globe className="w-5 h-5" />
-                </button>
-                {langDropdown && (
-                  <div className="absolute top-full mt-1 end-0 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[140px] z-50">
-                    {languages.map((l) => (
-                      <button
-                        key={l.code}
-                        onClick={() => { setLanguage(l.code); setLangDropdown(false); }}
-                        className="flex items-center justify-between w-full px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
-                      >
-                        <span className={lang === l.code ? "text-[#2F7A5B] font-semibold" : "text-[#1A1A2E]"}>
-                          {l.label}
-                        </span>
-                        {lang === l.code && <Check className="w-4 h-4 text-[#2F7A5B]" />}
-                      </button>
-                    ))}
-                  </div>
-                )}
+              <div className="text-xs text-gray-600 flex items-center gap-1">
+                {languages.map((item, index) => (
+                  <span key={item.code} className="inline-flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setLanguage(item.code)}
+                      className={lang === item.code ? "text-[#2F7A5B] font-semibold" : ""}
+                    >
+                      {item.label}
+                    </button>
+                    {index < languages.length - 1 && <span className="text-gray-300">|</span>}
+                  </span>
+                ))}
               </div>
               <Sheet open={open} onOpenChange={setOpen}>
                 <SheetTrigger asChild>
@@ -204,7 +194,7 @@ export default function Navbar() {
                     <Menu className="w-6 h-6" />
                   </button>
                 </SheetTrigger>
-                <SheetContent side="right" className="w-64">
+                <SheetContent side={dir === "rtl" ? "left" : "right"} className="w-64">
                   <div className="flex flex-col gap-6 mt-8">
                     <SheetClose asChild>
                       <Link
@@ -224,16 +214,18 @@ export default function Navbar() {
                         {t("nav.teachers")}
                       </a>
                     </SheetClose>
-                    <SheetClose asChild>
-                      <Link
-                        to="/onboarding"
-                        className="text-[#1A1A2E] hover:text-[#2F7A5B] font-medium text-lg flex items-center gap-1"
-                        onClick={() => setOpen(false)}
-                      >
-                        <GraduationCap className="w-4 h-4" />
-                        {t("nav.onboarding")}
-                      </Link>
-                    </SheetClose>
+                    {!isTeacher && (
+                      <SheetClose asChild>
+                        <Link
+                          to="/onboarding"
+                          className="text-[#1A1A2E] hover:text-[#2F7A5B] font-medium text-lg flex items-center gap-1"
+                          onClick={() => setOpen(false)}
+                        >
+                          <GraduationCap className="w-4 h-4" />
+                          {t("nav.onboarding")}
+                        </Link>
+                      </SheetClose>
+                    )}
 
                     {isAdmin && (
                       <SheetClose asChild>

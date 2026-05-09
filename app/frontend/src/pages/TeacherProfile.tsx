@@ -23,13 +23,13 @@ export default function TeacherProfile() {
           if (data) {
             setTeacher(data);
           } else {
-            const fallback = mockTeachers.find((t) => t.id === Number(id));
+            const fallback = mockTeachers.find((t) => String(t.id) === String(id) || t.id === Number(id));
             setTeacher(fallback || null);
           }
         }
       } catch {
         if (!cancelled) {
-          const fallback = mockTeachers.find((t) => t.id === Number(id));
+          const fallback = mockTeachers.find((t) => String(t.id) === String(id) || t.id === Number(id));
           setTeacher(fallback || null);
         }
       } finally {
