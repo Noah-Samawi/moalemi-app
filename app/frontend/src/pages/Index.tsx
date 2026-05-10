@@ -35,9 +35,9 @@ export default function Index() {
     async function loadContent() {
       try {
         const [announcementItem, featureItem, adItem] = await Promise.all([
-          getLatestContentByType("announcement"),
-          getLatestContentByType("feature"),
-          getLatestContentByType("advertising"),
+          getLatestContentByType("announcement", lang as any),
+          getLatestContentByType("feature", lang as any),
+          getLatestContentByType("advertising", lang as any),
         ]);
         if (cancelled) return;
         setAnnouncement(lang === "ar" ? (announcementItem?.body_ar || "") : (announcementItem?.body_de || ""));

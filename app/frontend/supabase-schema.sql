@@ -290,4 +290,118 @@ CREATE TRIGGER trg_update_teacher_rating
   FOR EACH ROW
   EXECUTE FUNCTION update_teacher_rating();
 
+-- ============================================
+-- CHANNELS TABLE (for chat between student & teacher)
+-- ============================================
+CREATE TABLE IF NOT EXISTS channels (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  booking_id UUID REFERENCES bookings(id) ON DELETE CASCADE NOT NULL UNIQUE,
+  student_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  teacher_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  name TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_channels_booking_id ON channels(booking_id);
+CREATE INDEX IF NOT EXISTS idx_channels_student_id ON channels(student_id);
+CREATE INDEX IF NOT EXISTS idx_channels_teacher_id ON channels(teacher_id);
+
+ALTER TABLE channels ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "channels_read_involved" ON channels;
+DROP POLICY IF EXISTS "channels_insert_system" ON channels;
+
+-- Users can read channels they're involved in
+CREATE POLICY "channels_read_involved" ON channels FOR SELECT TO authenticated USING (
+  auth.uid() = student_id OR auth.uid() = teacher_id
+);
+
+-- System/functions can insert channels
+CREATE POLICY "channels_insert_system" ON channels FOR INSERT TO authenticated WITH CHECK (true);
+
+-- ============================================
+-- MESSAGES TABLE
+-- ============================================
+CREATE TABLE IF NOT EXISTS messages (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  channel_id UUID REFERENCES channels(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_messages_channel_id ON messages(channel_id);
+CREATE INDEX IF NOT EXISTS idx_messages_user_id ON messages(user_id);
+CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);
+
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "messages_read_channel_members" ON messages;
+DROP POLICY IF EXISTS "messages_insert_authenticated" ON messages;
+DROP POLICY IF EXISTS "messages_delete_own" ON messages;
+
+-- Users can read messages in channels they're in
+CREATE POLICY "messages_read_channel_members" ON messages FOR SELECT TO authenticated USING (
+  channel_id IN (
+    SELECT id FROM channels WHERE auth.uid() = student_id OR auth.uid() = teacher_id
+  )
+);
+
+-- Authenticated users can insert messages
+CREATE POLICY "messages_insert_authenticated" ON messages FOR INSERT TO authenticated WITH CHECK (
+  channel_id IN (
+    SELECT id FROM channels WHERE auth.uid() = student_id OR auth.uid() = teacher_id
+  ) AND auth.uid() = user_id
+);
+
+-- Users can delete their own messages
+CREATE POLICY "messages_delete_own" ON messages FOR DELETE TO authenticated USING (auth.uid() = user_id);
+
+-- ============================================
+-- FUNCTION: Create chat channel when booking confirmed
+-- ============================================
+CREATE OR REPLACE FUNCTION create_channel_on_booking_confirmed()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_teacher_user_id UUID;
+  v_booking_subject TEXT;
+BEGIN
+  -- Only create channel when status changes to 'confirmed'
+  IF NEW.status = 'confirmed' AND OLD.status != 'confirmed' THEN
+    -- Get teacher's user_id
+    SELECT user_id INTO v_teacher_user_id FROM teachers WHERE id = NEW.teacher_id;
+    
+    -- Get booking subject (use English version if available)
+    v_booking_subject := COALESCE(NEW.subject_en, NEW.subject_ar, 'Lesson Chat');
+    
+    -- Create the channel
+    INSERT INTO channels (booking_id, student_id, teacher_id, name)
+    VALUES (NEW.id, NEW.student_id, v_teacher_user_id, v_booking_subject)
+    ON CONFLICT (booking_id) DO NOTHING;
+  END IF;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_create_channel_on_booking_confirmed ON bookings;
+CREATE TRIGGER trg_create_channel_on_booking_confirmed
+  AFTER UPDATE ON bookings
+  FOR EACH ROW
+  EXECUTE FUNCTION create_channel_on_booking_confirmed();
+
+-- Update channels.updated_at timestamp
+CREATE OR REPLACE FUNCTION touch_channel_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE channels SET updated_at = now() WHERE id = NEW.channel_id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_touch_channel_updated_at ON messages;
+CREATE TRIGGER trg_touch_channel_updated_at
+  AFTER INSERT ON messages
+  FOR EACH ROW
+  EXECUTE FUNCTION touch_channel_updated_at();
+
 COMMIT;

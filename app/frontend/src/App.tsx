@@ -4,6 +4,7 @@ import TeacherProfile from "@/pages/TeacherProfile";
 import Dashboard from "@/pages/Dashboard";
 import AdminDashboard from "@/pages/AdminDashboard";
 import TeacherOnboarding from "@/pages/TeacherOnboarding";
+import VirtualClassroom from "@/pages/VirtualClassroom";
 import { LanguageProvider, useLanguage } from "@/i18n/LanguageContext";
 import { AuthProvider } from "@/context/AuthContext";
 import "@/index.css";
@@ -19,6 +20,7 @@ function AppContent() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/onboarding" element={<TeacherOnboarding />} />
+        <Route path="/classroom" element={<VirtualClassroom />} />
       </Routes>
     </div>
   );
