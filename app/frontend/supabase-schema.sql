@@ -1,0 +1,407 @@
+-- معلمي / Mein Lehrer / My Teacher — Supabase Schema
+-- Run this SQL in the Supabase SQL Editor
+
+BEGIN;
+
+-- ============================================
+-- TEACHERS TABLE
+-- ============================================
+CREATE TABLE IF NOT EXISTS teachers (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  name_ar TEXT NOT NULL,
+  name_en TEXT NOT NULL,
+  name_de TEXT NOT NULL,
+  avatar TEXT,
+  banner TEXT,
+  specializations JSONB DEFAULT '[]'::jsonb,
+  bio_ar TEXT,
+  bio_en TEXT,
+  bio_de TEXT,
+  services JSONB DEFAULT '[]'::jsonb,
+  experience INTEGER DEFAULT 0,
+  hourly_rate INTEGER DEFAULT 0,
+  rating NUMERIC(3,2) DEFAULT 0,
+  reviews_count INTEGER DEFAULT 0,
+  is_pro BOOLEAN DEFAULT false,
+  featured BOOLEAN DEFAULT false,
+  approved BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- ============================================
+-- BOOKINGS TABLE
+-- ============================================
+CREATE TABLE IF NOT EXISTS bookings (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  student_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  teacher_id UUID REFERENCES teachers(id) ON DELETE CASCADE NOT NULL,
+  subject_ar TEXT,
+  subject_en TEXT,
+  subject_de TEXT,
+  date DATE,
+  time TEXT,
+  duration_ar TEXT,
+  duration_en TEXT,
+  duration_de TEXT,
+  status TEXT DEFAULT 'pending',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- ============================================
+-- ANNOUNCEMENTS TABLE
+-- ============================================
+CREATE TABLE IF NOT EXISTS announcements (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  content_ar TEXT,
+  content_en TEXT,
+  content_de TEXT,
+  active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- ============================================
+-- SITE CONTENT TABLE (FEATURES / ADS / ANNOUNCEMENTS)
+-- ============================================
+CREATE TABLE IF NOT EXISTS site_content (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  content_type TEXT NOT NULL CHECK (content_type IN ('announcement', 'feature', 'advertising')),
+  title_ar TEXT,
+  title_de TEXT,
+  body_ar TEXT,
+  body_de TEXT,
+  is_active BOOLEAN DEFAULT true,
+  created_by TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE OR REPLACE FUNCTION touch_site_content_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_touch_site_content_updated_at ON site_content;
+CREATE TRIGGER trg_touch_site_content_updated_at
+  BEFORE UPDATE ON site_content
+  FOR EACH ROW
+  EXECUTE FUNCTION touch_site_content_updated_at();
+
+-- ============================================
+-- INDEXES
+-- ============================================
+CREATE INDEX IF NOT EXISTS idx_teachers_user_id ON teachers(user_id);
+CREATE INDEX IF NOT EXISTS idx_teachers_approved ON teachers(approved);
+CREATE INDEX IF NOT EXISTS idx_teachers_featured ON teachers(featured);
+CREATE INDEX IF NOT EXISTS idx_bookings_student_id ON bookings(student_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_teacher_id ON bookings(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_announcements_active ON announcements(active);
+CREATE INDEX IF NOT EXISTS idx_site_content_type_active ON site_content(content_type, is_active);
+
+-- ============================================
+-- ROW LEVEL SECURITY
+-- ============================================
+
+-- Teachers: drop existing policies, then recreate with stricter rules
+ALTER TABLE teachers ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "teachers_read_all" ON teachers;
+DROP POLICY IF EXISTS "teachers_insert_own" ON teachers;
+DROP POLICY IF EXISTS "teachers_update_own_or_admin" ON teachers;
+DROP POLICY IF EXISTS "teachers_admin_delete" ON teachers;
+DROP POLICY IF EXISTS "teachers_admin_read_all" ON teachers;
+DROP POLICY IF EXISTS "teachers_read_own" ON teachers;
+
+-- Public/anon: only see approved teachers
+CREATE POLICY "teachers_read_approved" ON teachers FOR SELECT USING (approved = true);
+-- Authenticated teacher: can read own profile even if unapproved
+CREATE POLICY "teachers_read_own" ON teachers FOR SELECT TO authenticated USING (auth.uid() = user_id);
+-- Admin: see all teachers (including unapproved) for admin dashboard
+CREATE POLICY "teachers_admin_read_all" ON teachers FOR SELECT TO authenticated USING (auth.jwt() ->> 'email' = 'noahalsamawi688@gmail.com');
+-- Authenticated: insert own row
+CREATE POLICY "teachers_insert_own" ON teachers FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+-- Authenticated: update own row OR admin
+CREATE POLICY "teachers_update_own_or_admin" ON teachers FOR UPDATE TO authenticated USING (auth.uid() = user_id OR auth.jwt() ->> 'email' = 'noahalsamawi688@gmail.com');
+-- Admin-only: delete teachers
+CREATE POLICY "teachers_admin_delete" ON teachers FOR DELETE TO authenticated USING (auth.jwt() ->> 'email' = 'noahalsamawi688@gmail.com');
+
+-- Bookings: drop existing policies, then recreate with stricter rules
+ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "bookings_read_involved" ON bookings;
+DROP POLICY IF EXISTS "bookings_insert_student" ON bookings;
+DROP POLICY IF EXISTS "bookings_update_involved" ON bookings;
+DROP POLICY IF EXISTS "bookings_admin_all" ON bookings;
+
+-- Admin: full CRUD on bookings
+CREATE POLICY "bookings_admin_all" ON bookings FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'noahalsamawi688@gmail.com') WITH CHECK (auth.jwt() ->> 'email' = 'noahalsamawi688@gmail.com');
+-- Students: read own bookings
+CREATE POLICY "bookings_read_student" ON bookings FOR SELECT TO authenticated USING (auth.uid() = student_id);
+-- Teachers: read bookings where they are the teacher
+CREATE POLICY "bookings_read_teacher" ON bookings FOR SELECT TO authenticated USING (auth.uid() = (SELECT user_id FROM teachers WHERE id = teacher_id));
+-- Students: insert own booking
+CREATE POLICY "bookings_insert_student" ON bookings FOR INSERT TO authenticated WITH CHECK (auth.uid() = student_id);
+
+-- Announcements: drop existing policies, then recreate with stricter rules
+ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "announcements_read_all" ON announcements;
+DROP POLICY IF EXISTS "announcements_admin_manage" ON announcements;
+
+-- Public: only see active announcements
+CREATE POLICY "announcements_read_active" ON announcements FOR SELECT USING (active = true);
+-- Admin: full CRUD on announcements
+CREATE POLICY "announcements_admin_all" ON announcements FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'noahalsamawi688@gmail.com') WITH CHECK (auth.jwt() ->> 'email' = 'noahalsamawi688@gmail.com');
+
+-- Site content: drop and recreate policies
+ALTER TABLE site_content ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "site_content_read_active" ON site_content;
+DROP POLICY IF EXISTS "site_content_admin_all" ON site_content;
+
+CREATE POLICY "site_content_read_active" ON site_content FOR SELECT USING (is_active = true);
+CREATE POLICY "site_content_admin_all" ON site_content FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'noahalsamawi688@gmail.com') WITH CHECK (auth.jwt() ->> 'email' = 'noahalsamawi688@gmail.com');
+
+-- ============================================
+-- STORAGE: TEACHER MEDIA (avatars / banners)
+-- ============================================
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('avatars', 'avatars', true)
+ON CONFLICT (id) DO NOTHING;
+
+DROP POLICY IF EXISTS "teacher_media_read_public" ON storage.objects;
+DROP POLICY IF EXISTS "teacher_media_auth_insert" ON storage.objects;
+DROP POLICY IF EXISTS "teacher_media_owner_or_admin_delete" ON storage.objects;
+
+CREATE POLICY "teacher_media_read_public"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'avatars');
+
+CREATE POLICY "teacher_media_auth_insert"
+ON storage.objects FOR INSERT TO authenticated
+WITH CHECK (bucket_id = 'avatars');
+
+CREATE POLICY "teacher_media_owner_or_admin_delete"
+ON storage.objects FOR DELETE TO authenticated
+USING (
+  bucket_id = 'avatars'
+  AND (
+    auth.uid()::text = (storage.foldername(name))[1]
+    OR auth.jwt() ->> 'email' = 'noahalsamawi688@gmail.com'
+  )
+);
+
+-- ============================================
+-- SEED DATA (4 mock teachers)
+-- ============================================
+INSERT INTO teachers (id, name_ar, name_en, name_de, avatar, specializations, bio_ar, bio_en, bio_de, services, experience, hourly_rate, rating, reviews_count, is_pro, featured, approved) VALUES
+(
+  'a0000001-0000-0000-0000-000000000001',
+  'الشيخ أحمد محمد',
+  'Sheikh Ahmed Mohammed',
+  'Sheikh Ahmed Mohammed',
+  'https://mgx-backend-cdn.metadl.com/generate/images/1176546/2026-05-01/nwmpgyqaafla/teacher-avatar-1.png',
+  '[{"ar":"القرآن الكريم","en":"Holy Quran","de":"Heiliger Quran"},{"ar":"التجويد","en":"Tajweed","de":"Tajweed"},{"ar":"القراءات العشر","en":"Ten Qira''at","de":"Zehn Lesarten"}]'::jsonb,
+  'شيخ متخصص في القراءات العشر مع خبرة تزيد عن 15 عاماً في تدريس القرآن الكريم والتجويد. حاصل على إجازة في القراءات العشر من مشايخ متعددين.',
+  'A scholar specialized in the Ten Qira''at with over 15 years of experience teaching the Holy Quran and Tajweed. Holder of an Ijazah in the Ten Qira''at from multiple scholars.',
+  'Ein Gelehrter, spezialisiert auf die zehn Lesarten mit über 15 Jahren Erfahrung im Unterrichten des Heiligen Quran und Tajweed. Inhaber einer Ijazah in den zehn Lesarten von mehreren Gelehrten.',
+  '[{"name":{"ar":"حفظ القرآن الكريم","en":"Quran Memorization","de":"Quran-Memorierung"},"description":{"ar":"برنامج متكامل لحفظ القرآن الكريم بالتجويد","en":"A comprehensive program for memorizing the Holy Quran with Tajweed","de":"Ein umfassendes Programm zur Memorierung des Heiligen Quran mit Tajweed"}},{"name":{"ar":"أحكام التجويد","en":"Tajweed Rules","de":"Tajweed-Regeln"},"description":{"ar":"تعلم أحكام التجويد بشكل مفصل وتطبيقي","en":"Learn Tajweed rules in detail with practical application","de":"Lernen Sie die Tajweed-Regeln im Detail und praktisch"}},{"name":{"ar":"القراءات العشر","en":"Ten Qira''at","de":"Zehn Lesarten"},"description":{"ar":"دراسة القراءات العشر الصغرى والكبرى","en":"Study of the minor and major Ten Qira''at","de":"Studium der kleinen und großen zehn Lesarten"}}]'::jsonb,
+  15, 25, 4.90, 234, true, true, true
+),
+(
+  'a0000002-0000-0000-0000-000000000002',
+  'الأستاذة فاطمة علي',
+  'Fatima Ali',
+  'Fatima Ali',
+  'https://mgx-backend-cdn.metadl.com/generate/images/1176546/2026-05-01/nwmpetyaafma/teacher-avatar-2.png',
+  '[{"ar":"اللغة العربية","en":"Arabic Language","de":"Arabische Sprache"},{"ar":"النحو","en":"Grammar","de":"Grammatik"},{"ar":"الصرف","en":"Morphology","de":"Morphologie"}]'::jsonb,
+  'أستاذة متخصصة في اللغة العربية وعلومها، مع خبرة واسعة في تدريس النحو والصرف والبلاغة لطلاب مختلف المستويات.',
+  'A specialist in Arabic language and its sciences, with extensive experience teaching grammar, morphology, and rhetoric to students of all levels.',
+  'Eine Spezialistin für die arabische Sprache und ihre Wissenschaften mit umfangreicher Erfahrung im Unterrichten von Grammatik, Morphologie und Rhetorik für Studenten aller Niveaus.',
+  '[{"name":{"ar":"النحو والصرف","en":"Grammar & Morphology","de":"Grammatik und Morphologie"},"description":{"ar":"دروس شاملة في قواعد النحو والصرف العربي","en":"Comprehensive lessons in Arabic grammar and morphology rules","de":"Umfassende Lektionen in arabischer Grammatik und Morphologie"}},{"name":{"ar":"البلاغة العربية","en":"Arabic Rhetoric","de":"Arabische Rhetorik"},"description":{"ar":"تعلم فنون البلاغة: البيان والمعاني والبديع","en":"Learn the arts of rhetoric: clarity, meaning, and stylistics","de":"Lernen Sie die Kunst der Rhetorik: Klarheit, Bedeutung und Stilistik"}},{"name":{"ar":"المحادثة بالعربية","en":"Arabic Conversation","de":"Arabisch Konversation"},"description":{"ar":"تحسين مهارات المحادثة والتعبير باللغة العربية","en":"Improve your Arabic conversation and expression skills","de":"Verbessern Sie Ihre Konversations- und Ausdrucksfähigkeiten auf Arabisch"}}]'::jsonb,
+  10, 20, 4.80, 189, false, false, true
+),
+(
+  'a0000003-0000-0000-0000-000000000003',
+  'الدكتور خالد حسن',
+  'Dr. Khalid Hassan',
+  'Dr. Khalid Hassan',
+  'https://mgx-backend-cdn.metadl.com/generate/images/1176546/2026-05-01/nwmpgyqaafla/teacher-avatar-1.png',
+  '[{"ar":"الفقه","en":"Fiqh","de":"Fiqh"},{"ar":"العقيدة","en":"Aqeedah","de":"Glaubenslehre"},{"ar":"الحديث","en":"Hadith","de":"Hadith"}]'::jsonb,
+  'دكتور في الشريعة الإسلامية مع أكثر من 20 عاماً في التدريس والبحث العلمي. متخصص في الفقه والعقيدة وعلوم الحديث.',
+  'A doctor of Islamic Sharia with over 20 years of teaching and research experience. Specialized in Fiqh, Aqeedah, and Hadith sciences.',
+  'Ein Doktor der islamischen Rechtswissenschaften mit über 20 Jahren Lehr- und Forschungserfahrung. Spezialisiert auf Fiqh, Glaubenslehre und Hadith-Wissenschaften.',
+  '[{"name":{"ar":"الفقه الإسلامي","en":"Islamic Fiqh","de":"Islamisches Recht"},"description":{"ar":"دراسة الفقه الإسلامي وفق المذاهب الأربعة","en":"Study Islamic Fiqh according to the four schools of thought","de":"Studium des islamischen Rechts nach den vier Rechtsschulen"}},{"name":{"ar":"العقيدة الصحيحة","en":"Correct Aqeedah","de":"Die richtige Glaubenslehre"},"description":{"ar":"تعلم أصول العقيدة الإسلامية الصحيحة","en":"Learn the fundamentals of correct Islamic Aqeedah","de":"Lernen Sie die Grundlagen der richtigen islamischen Glaubenslehre"}},{"name":{"ar":"علوم الحديث","en":"Hadith Sciences","de":"Hadith-Wissenschaften"},"description":{"ar":"دراسة مصطلح الحديث وعلومه","en":"Study Hadith terminology and sciences","de":"Studium der Hadith-Terminologie und ihrer Wissenschaften"}}]'::jsonb,
+  20, 30, 4.95, 312, true, true, true
+),
+(
+  'a0000004-0000-0000-0000-000000000004',
+  'الأستاذة نور الهدى',
+  'Nour Al-Huda',
+  'Nour Al-Huda',
+  'https://mgx-backend-cdn.metadl.com/generate/images/1176546/2026-05-01/nwmpetyaafma/teacher-avatar-2.png',
+  '[{"ar":"القرآن الكريم","en":"Holy Quran","de":"Heiliger Quran"},{"ar":"التجويد","en":"Tajweed","de":"Tajweed"}]'::jsonb,
+  'معلمة قرآن متخصصة في تحفيظ القرآن الكريم وتعليم التجويد للنساء والأطفال بأسلوب سهل ومبسط.',
+  'A Quran teacher specialized in memorization and teaching Tajweed to women and children with an easy and simplified approach.',
+  'Eine Quran-Lehrerin, spezialisiert auf die Memorierung des Heiligen Quran und den Tajweed-Unterricht für Frauen und Kinder in einer einfachen und verständlichen Methode.',
+  '[{"name":{"ar":"تحفيظ القرآن","en":"Quran Memorization","de":"Quran-Memorierung"},"description":{"ar":"برنامج تحفيظ مخصص للنساء والأطفال","en":"A memorization program designed for women and children","de":"Ein spezielles Memorierungsprogramm für Frauen und Kinder"}},{"name":{"ar":"تجويد القرآن","en":"Quran Tajweed","de":"Quran-Tajweed"},"description":{"ar":"تعلم أحكام التجويد بطريقة مبسطة","en":"Learn Tajweed rules in a simplified way","de":"Lernen Sie die Tajweed-Regeln auf vereinfachte Weise"}}]'::jsonb,
+  8, 18, 4.70, 156, false, false, true
+);
+
+-- ============================================
+-- REVIEWS TABLE
+-- ============================================
+CREATE TABLE IF NOT EXISTS reviews (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  teacher_id UUID REFERENCES teachers(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  comment TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(teacher_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_reviews_teacher_id ON reviews(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_user_id ON reviews(user_id);
+
+ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "reviews_read_all" ON reviews;
+DROP POLICY IF EXISTS "reviews_insert_authenticated" ON reviews;
+DROP POLICY IF EXISTS "reviews_delete_own" ON reviews;
+
+CREATE POLICY "reviews_read_all" ON reviews FOR SELECT USING (true);
+CREATE POLICY "reviews_insert_authenticated" ON reviews FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "reviews_delete_own" ON reviews FOR DELETE TO authenticated USING (auth.uid() = user_id);
+
+CREATE OR REPLACE FUNCTION update_teacher_rating()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE teachers
+  SET
+    rating = COALESCE((SELECT ROUND(AVG(rating)::numeric, 2) FROM reviews WHERE teacher_id = COALESCE(NEW.teacher_id, OLD.teacher_id)), 0),
+    reviews_count = COALESCE((SELECT COUNT(*)::integer FROM reviews WHERE teacher_id = COALESCE(NEW.teacher_id, OLD.teacher_id)), 0)
+  WHERE id = COALESCE(NEW.teacher_id, OLD.teacher_id);
+  RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_update_teacher_rating ON reviews;
+CREATE TRIGGER trg_update_teacher_rating
+  AFTER INSERT OR DELETE ON reviews
+  FOR EACH ROW
+  EXECUTE FUNCTION update_teacher_rating();
+
+-- ============================================
+-- CHANNELS TABLE (for chat between student & teacher)
+-- ============================================
+CREATE TABLE IF NOT EXISTS channels (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  booking_id UUID REFERENCES bookings(id) ON DELETE CASCADE NOT NULL UNIQUE,
+  student_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  teacher_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  name TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_channels_booking_id ON channels(booking_id);
+CREATE INDEX IF NOT EXISTS idx_channels_student_id ON channels(student_id);
+CREATE INDEX IF NOT EXISTS idx_channels_teacher_id ON channels(teacher_id);
+
+ALTER TABLE channels ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "channels_read_involved" ON channels;
+DROP POLICY IF EXISTS "channels_insert_system" ON channels;
+
+-- Users can read channels they're involved in
+CREATE POLICY "channels_read_involved" ON channels FOR SELECT TO authenticated USING (
+  auth.uid() = student_id OR auth.uid() = teacher_id
+);
+
+-- System/functions can insert channels
+CREATE POLICY "channels_insert_system" ON channels FOR INSERT TO authenticated WITH CHECK (true);
+
+-- ============================================
+-- MESSAGES TABLE
+-- ============================================
+CREATE TABLE IF NOT EXISTS messages (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  channel_id UUID REFERENCES channels(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_messages_channel_id ON messages(channel_id);
+CREATE INDEX IF NOT EXISTS idx_messages_user_id ON messages(user_id);
+CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);
+
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "messages_read_channel_members" ON messages;
+DROP POLICY IF EXISTS "messages_insert_authenticated" ON messages;
+DROP POLICY IF EXISTS "messages_delete_own" ON messages;
+
+-- Users can read messages in channels they're in
+CREATE POLICY "messages_read_channel_members" ON messages FOR SELECT TO authenticated USING (
+  channel_id IN (
+    SELECT id FROM channels WHERE auth.uid() = student_id OR auth.uid() = teacher_id
+  )
+);
+
+-- Authenticated users can insert messages
+CREATE POLICY "messages_insert_authenticated" ON messages FOR INSERT TO authenticated WITH CHECK (
+  channel_id IN (
+    SELECT id FROM channels WHERE auth.uid() = student_id OR auth.uid() = teacher_id
+  ) AND auth.uid() = user_id
+);
+
+-- Users can delete their own messages
+CREATE POLICY "messages_delete_own" ON messages FOR DELETE TO authenticated USING (auth.uid() = user_id);
+
+-- ============================================
+-- FUNCTION: Create chat channel when booking confirmed
+-- ============================================
+CREATE OR REPLACE FUNCTION create_channel_on_booking_confirmed()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_teacher_user_id UUID;
+  v_booking_subject TEXT;
+BEGIN
+  -- Only create channel when status changes to 'confirmed'
+  IF NEW.status = 'confirmed' AND OLD.status != 'confirmed' THEN
+    -- Get teacher's user_id
+    SELECT user_id INTO v_teacher_user_id FROM teachers WHERE id = NEW.teacher_id;
+    
+    -- Get booking subject (use English version if available)
+    v_booking_subject := COALESCE(NEW.subject_en, NEW.subject_ar, 'Lesson Chat');
+    
+    -- Create the channel
+    INSERT INTO channels (booking_id, student_id, teacher_id, name)
+    VALUES (NEW.id, NEW.student_id, v_teacher_user_id, v_booking_subject)
+    ON CONFLICT (booking_id) DO NOTHING;
+  END IF;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_create_channel_on_booking_confirmed ON bookings;
+CREATE TRIGGER trg_create_channel_on_booking_confirmed
+  AFTER UPDATE ON bookings
+  FOR EACH ROW
+  EXECUTE FUNCTION create_channel_on_booking_confirmed();
+
+-- Update channels.updated_at timestamp
+CREATE OR REPLACE FUNCTION touch_channel_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE channels SET updated_at = now() WHERE id = NEW.channel_id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_touch_channel_updated_at ON messages;
+CREATE TRIGGER trg_touch_channel_updated_at
+  AFTER INSERT ON messages
+  FOR EACH ROW
+  EXECUTE FUNCTION touch_channel_updated_at();
+
+COMMIT;

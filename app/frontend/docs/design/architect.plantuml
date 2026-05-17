@@ -1,0 +1,134 @@
+@startuml معلمي System Architecture
+
+skinparam componentStyle rectangle
+skinparam backgroundColor #FEFEFE
+skinparam shadowing false
+
+package "Frontend (React + TypeScript + Vite)" as FE {
+    package "Pages" {
+        [HomePage] as Index
+        [TeacherProfilePage] as TP
+        [DashboardPage] as Dash
+        [AdminDashboardPage] as Admin
+        [TeacherOnboardingPage] as Onboard
+        [AuthCallbackPage] as AuthCB
+    }
+
+    package "Organisms" {
+        [Navbar] as Nav
+        [HeroSection] as Hero
+        [FeaturedTeachersGrid] as FTG
+        [AuthModal] as AuthM
+        [TeacherProfileBooking] as TPB
+        [DashboardSidebar] as DSB
+    }
+
+    package "Molecules" {
+        [TeacherCard] as TC
+        [BookingFormGroup] as BFG
+        [BookingConfirmationToast] as BCT
+        [FeatureItem] as FI
+    }
+
+    package "Atoms" {
+        [AvatarAtom] as Avatar
+        [BadgeTag] as Badge
+        [PrimaryButton] as PBtn
+        [SecondaryButton] as SBtn
+        [StarRating] as SR
+    }
+
+    package "State & i18n" {
+        [LanguageContext] as LC
+        [AuthContext] as AC
+        [translations.ts] as Trans
+    }
+
+    package "Data Layer" {
+        [api.ts] as API
+        [mockData.ts] as Mock
+        [config.ts] as Config
+    }
+}
+
+package "Backend (Atoms Cloud / Supabase)" as BE {
+    package "Auth Service" {
+        [Supabase Auth] as SAuth
+        [JWT Handler] as JWT
+        [Role Guard] as RG
+    }
+
+    package "API Layer (Edge Functions)" {
+        [Teachers API] as TAPI
+        [Bookings API] as BAPI
+        [Users API] as UAPI
+        [Admin API] as AAPI
+    }
+
+    package "Storage" {
+        [Avatar Storage] as AvStore
+        [Document Storage] as DocStore
+    }
+}
+
+package "Database (PostgreSQL)" as DB {
+    [users] as UsersTbl
+    [teachers] as TeachersTbl
+    [bookings] as BookingsTbl
+    [services] as ServicesTbl
+    [reviews] as ReviewsTbl
+    [announcements] as AnnTbl
+    [availability] as AvailTbl
+}
+
+package "Third-Party" as TP {
+    [Stripe / Payment] as Payment
+    [Video SDK (Jitsi)] as Video
+]
+
+' Frontend internal connections
+Index --> Hero
+Index --> FTG
+Index --> Nav
+TP --> TPB
+TP --> TC
+Dash --> DSB
+Admin --> DSB
+Onboard --> BFG
+
+TC --> Avatar
+TC --> Badge
+TC --> SR
+TC --> PBtn
+TPB --> BFG
+TPB --> BCT
+BFG --> PBtn
+
+LC --> Trans
+AC --> LC
+
+' Frontend to Backend
+API --> SAuth : auth requests
+API --> TAPI : teacher CRUD
+API --> BAPI : booking CRUD
+API --> UAPI : user profile
+API --> AAPI : admin actions
+
+' Backend internal
+SAuth --> JWT
+JWT --> RG
+TAPI --> TeachersTbl
+BAPI --> BookingsTbl
+UAPI --> UsersTbl
+AAPI --> TeachersTbl
+AAPI --> AnnTbl
+
+' Storage
+TAPI --> AvStore : upload avatar
+Onboard --> AvStore : upload credentials
+
+' Third-party
+BAPI --> Payment : process payment
+Dash --> Video : join lesson
+
+@enduml

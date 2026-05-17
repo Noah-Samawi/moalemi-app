@@ -1,0 +1,134 @@
+@startuml معلمي ER Diagram
+
+skinparam shadowing false
+skinparam linetype ortho
+
+' ==================== Entities ====================
+
+entity "users" as users {
+    * id : uuid <<PK>>
+    --
+    * email : varchar(255) <<UNIQUE>>
+    * full_name : varchar(255)
+    * role : enum(STUDENT, TEACHER, ADMIN)
+    avatar_url : varchar(500)
+    * preferred_language : enum(ar, en, de) <<DEFAULT 'ar'>>
+    * created_at : timestamptz <<DEFAULT now()>>
+    * updated_at : timestamptz <<DEFAULT now()>>
+}
+
+entity "teachers" as teachers {
+    * id : uuid <<PK>>
+    --
+    * user_id : uuid <<FK, UNIQUE>>
+    * name_ar : varchar(255)
+    * name_en : varchar(255)
+    * name_de : varchar(255)
+    * bio_ar : text
+    * bio_en : text
+    * bio_de : text
+    avatar_url : varchar(500)
+    * hourly_rate : decimal(10,2)
+    * experience_years : int
+    rating : float <<DEFAULT 0>>
+    reviews_count : int <<DEFAULT 0>>
+    is_pro : boolean <<DEFAULT false>>
+    is_featured : boolean <<DEFAULT false>>
+    is_approved : boolean <<DEFAULT false>>
+    * created_at : timestamptz <<DEFAULT now()>>
+    * updated_at : timestamptz <<DEFAULT now()>>
+}
+
+entity "teacher_specializations" as specializations {
+    * id : uuid <<PK>>
+    --
+    * teacher_id : uuid <<FK>>
+    * name_ar : varchar(255)
+    * name_en : varchar(255)
+    * name_de : varchar(255)
+    * sort_order : int
+}
+
+entity "services" as services {
+    * id : uuid <<PK>>
+    --
+    * teacher_id : uuid <<FK>>
+    * name_ar : varchar(255)
+    * name_en : varchar(255)
+    * name_de : varchar(255)
+    * description_ar : text
+    * description_en : text
+    * description_de : text
+    * sort_order : int
+}
+
+entity "availability" as availability {
+    * id : uuid <<PK>>
+    --
+    * teacher_id : uuid <<FK>>
+    * day_of_week : int <<0-6>>
+    * start_time : time
+    * end_time : time
+    is_recurring : boolean <<DEFAULT true>>
+    specific_date : date
+}
+
+entity "bookings" as bookings {
+    * id : uuid <<PK>>
+    --
+    * student_id : uuid <<FK>>
+    * teacher_id : uuid <<FK>>
+    * service_id : uuid <<FK>>
+    * date : date
+    * start_time : time
+    * end_time : time
+    * status : enum(PENDING, CONFIRMED, CANCELLED, COMPLETED) <<DEFAULT 'PENDING'>>
+    notes : text
+    * total_price : decimal(10,2)
+    * payment_status : enum(PENDING, PAID, REFUNDED) <<DEFAULT 'PENDING'>>
+    meeting_url : varchar(500)
+    * created_at : timestamptz <<DEFAULT now()>>
+    * updated_at : timestamptz <<DEFAULT now()>>
+}
+
+entity "reviews" as reviews {
+    * id : uuid <<PK>>
+    --
+    * booking_id : uuid <<FK, UNIQUE>>
+    * student_id : uuid <<FK>>
+    * teacher_id : uuid <<FK>>
+    * rating : int <<1-5>>
+    comment : text
+    * created_at : timestamptz <<DEFAULT now()>>
+}
+
+entity "announcements" as announcements {
+    * id : uuid <<PK>>
+    --
+    * title_ar : varchar(255)
+    * title_en : varchar(255)
+    * title_de : varchar(255)
+    * content_ar : text
+    * content_en : text
+    * content_de : text
+    is_active : boolean <<DEFAULT true>>
+    * created_by : uuid <<FK>>
+    * created_at : timestamptz <<DEFAULT now()>>
+    updated_at : timestamptz
+}
+
+' ==================== Relationships ====================
+
+users ||--o| teachers : "teachers.user_id → users.id"
+teachers ||--o{ specializations : "specializations.teacher_id → teachers.id"
+teachers ||--o{ services : "services.teacher_id → teachers.id"
+teachers ||--o{ availability : "availability.teacher_id → teachers.id"
+users ||--o{ bookings : "bookings.student_id → users.id"
+teachers ||--o{ bookings : "bookings.teacher_id → teachers.id"
+services ||--o{ bookings : "bookings.service_id → services.id"
+bookings ||--o| reviews : "reviews.booking_id → bookings.id"
+users ||--o{ reviews : "reviews.student_id → users.id"
+teachers ||--o{ reviews : "reviews.teacher_id → teachers.id"
+users ||--o{ announcements : "announcements.created_by → users.id"
+
+@enduml
