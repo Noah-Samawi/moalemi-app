@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/organisms/Navbar";
 import DashboardSidebar from "@/components/organisms/DashboardSidebar";
 import UserProfileSettings from "@/components/organisms/UserProfileSettings";
+import AiAssistant from "@/components/organisms/AiAssistant";
+import AdminKnowledgeBase from "@/components/organisms/AdminKnowledgeBase";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import { getBookingsByStudent, getBookingsByTeacher, type BookingRow } from "@/services/bookingService";
@@ -439,6 +441,10 @@ export default function Dashboard() {
           {/* ── Settings tab ── */}
           {activeTab === "settings" ? (
             renderSettings()
+          ) : activeTab === "ai-assistant" ? (
+            <AiAssistant />
+          ) : activeTab === "ai-knowledge" ? (
+            <AdminKnowledgeBase />
           ) : (
             <>
               {/* ── Stats card ── */}
