@@ -47,7 +47,7 @@ export default function TeacherOnboarding() {
       try {
         const teacher = await getTeacherByUserId(user.id);
         if (!teacher || cancelled) return;
-        setExistingTeacherId(teacher.id);
+        setExistingTeacherId(teacher.id || null);
         setForm({
           nameAr: teacher.name_ar || "",
           nameEn: teacher.name_en || "",
@@ -65,7 +65,8 @@ export default function TeacherOnboarding() {
         setAvatarUrl(teacher.avatar || "");
         setBannerUrl(teacher.banner || "");
 
-        if (!isEditMode) {
+        // Only navigate if the teacher has a valid id and we're not already in edit mode
+        if (!isEditMode && teacher.id) {
           navigate(`/teacher/${teacher.id}?edit=1`, { replace: true });
         }
       } catch (err) {
@@ -96,6 +97,7 @@ export default function TeacherOnboarding() {
         .map((s) => ({ ar: s, en: s, de: s }));
 
       if (existingTeacherId) {
+        // UPDATE existing teacher
         await updateTeacher(existingTeacherId, {
           name_ar: form.nameAr,
           name_en: form.nameEn,
@@ -110,8 +112,9 @@ export default function TeacherOnboarding() {
           banner: bannerUrl || null,
         });
       } else {
+        // CREATE new teacher
         const created = await createTeacher({
-          user_id: user.id,
+          user_id: user!.id,
           name_ar: form.nameAr,
           name_en: form.nameEn,
           name_de: form.nameDe,
@@ -124,14 +127,26 @@ export default function TeacherOnboarding() {
           avatar: avatarUrl || undefined,
           banner: bannerUrl || undefined,
         });
-        setExistingTeacherId(created.id);
+
+        // created?.id may be empty string when RLS blocks the post-insert SELECT
+        // (teacher row was created, but can't be read yet because approved=false).
+        // The insert itself succeeded — show success either way.
+        if (created?.id) {
+          setExistingTeacherId(created.id);
+        }
       }
       setSubmitted(true);
-      setTimeout(() => setSubmitted(false), 3000);
-    } catch (err) {
-      setSubmitError(
-        err instanceof Error ? err.message : "Failed to submit. Please try again."
-      );
+      setTimeout(() => setSubmitted(false), 4000);
+    } catch (err: unknown) {
+      // Show the exact Supabase / JS error so the user (or dev) can debug
+      const msg =
+        err instanceof Error
+          ? err.message
+          : typeof err === "object" && err !== null && "message" in err
+          ? String((err as { message: unknown }).message)
+          : "Unbekannter Fehler. Bitte erneut versuchen.";
+      console.error("[TeacherOnboarding] handleSubmit error:", err);
+      setSubmitError(msg);
     } finally {
       setSubmitting(false);
     }

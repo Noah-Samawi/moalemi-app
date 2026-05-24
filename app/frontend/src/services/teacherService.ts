@@ -119,27 +119,46 @@ interface CreateTeacherData {
   banner?: string;
 }
 
-export async function createTeacher(data: CreateTeacherData) {
-  const { data: result, error } = await supabase
+export async function createTeacher(data: CreateTeacherData): Promise<TeacherRow | null> {
+  // Step 1: Pure insert — do NOT chain .select().single() here.
+  // After insert the row has approved=false, so the SELECT-policy (approved=true)
+  // would block the read and trigger a PGRST116 "no rows returned" error.
+  const { error: insertError } = await supabase
     .from('teachers')
-    .insert([data])
-    .select()
-    .single();
+    .insert([data]);
 
-  if (error) throw error;
-  return result;
+  if (insertError) throw insertError;
+
+  // Step 2: Fetch the newly created row by user_id (needs "teachers_read_own" RLS policy).
+  if (data.user_id) {
+    const { data: row, error: selectError } = await supabase
+      .from('teachers')
+      .select(TEACHER_COLUMNS)
+      .eq('user_id', data.user_id)
+      .maybeSingle();
+
+    if (!selectError && row) return row as TeacherRow;
+
+    // RLS still blocks the read (missing teachers_read_own policy).
+    // INSERT succeeded — return a stub so the caller can show success without crashing.
+    console.warn(
+      '[teacherService] createTeacher: INSERT succeeded but SELECT blocked by RLS. ' +
+      'Add policy: CREATE POLICY "teachers_read_own" ON teachers FOR SELECT TO authenticated USING (auth.uid() = user_id);'
+    );
+    return { id: '', user_id: data.user_id } as unknown as TeacherRow;
+  }
+
+  return null;
 }
 
 export async function updateTeacher(id: string, updates: Partial<TeacherRow>) {
-  const { data, error } = await supabase
+  // Do NOT chain .select().single() — RLS blocks the read for unapproved teachers.
+  const { error } = await supabase
     .from('teachers')
     .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
+    .eq('id', id);
 
   if (error) throw error;
-  return data;
 }
 
 export async function deleteTeacher(id: string) {
