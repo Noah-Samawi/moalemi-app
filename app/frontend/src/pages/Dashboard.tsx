@@ -6,11 +6,11 @@ import UserProfileSettings from "@/components/organisms/UserProfileSettings";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import { getBookingsByStudent, getBookingsByTeacher, type BookingRow } from "@/services/bookingService";
-import { getTeacherByUserId } from "@/services/teacherService";
+import { getTeacherByUserId, getTeacherRowById, updateTeacher, type TeacherRow } from "@/services/teacherService";
 import { getChannelByBookingId } from "@/services/channelService";
 import {
   BookOpen, History, Settings, Video, Clock, CheckCircle,
-  Calendar, Users, ArrowRight, User, Bell, LogOut, MessageCircle,
+  Calendar, Users, ArrowRight, User, Bell, MessageCircle, Save,
 } from "lucide-react";
 
 // ── Upcoming = pending / scheduled / confirmed; History = completed / cancelled ──
@@ -28,6 +28,19 @@ export default function Dashboard() {
   const [joiningBookingId, setJoiningBookingId] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  // ── Teacher profile inline editor state ──
+  const [teacherRow, setTeacherRow]       = useState<TeacherRow | null>(null);
+  const [tBioEn, setTBioEn]             = useState("");
+  const [tBioDe, setTBioDe]             = useState("");
+  const [tBioAr, setTBioAr]             = useState("");
+  const [tRate, setTRate]               = useState("");
+  const [tExp, setTExp]                 = useState("");
+  const [tPhone, setTPhone]             = useState("");
+  const [tEmail, setTEmail]             = useState("");
+  const [savingTeacher, setSavingTeacher] = useState(false);
+  const [teacherSaveOk, setTeacherSaveOk] = useState(false);
+  const [teacherSaveErr, setTeacherSaveErr] = useState("");
+
   // ── Tab change: redirect to /classroom for classroom tab ──
   const handleTabChange = (tab: string) => {
     if (tab === "classroom") {
@@ -43,7 +56,22 @@ export default function Dashboard() {
       if (!user?.id) { setLoading(false); return; }
       try {
         const myTeacher = await getTeacherByUserId(user.id);
-        if (!cancelled) setTeacherId(myTeacher?.id ?? null);
+        if (!cancelled) {
+          setTeacherId(myTeacher?.id ?? null);
+          if (myTeacher?.id) {
+            const row = await getTeacherRowById(myTeacher.id);
+            if (!cancelled && row) {
+              setTeacherRow(row);
+              setTBioEn(row.bio_en ?? "");
+              setTBioDe(row.bio_de ?? "");
+              setTBioAr(row.bio_ar ?? "");
+              setTRate(String(row.hourly_rate ?? ""));
+              setTExp(String(row.experience ?? ""));
+              setTPhone(row.phone ?? "");
+              setTEmail(row.contact_email ?? "");
+            }
+          }
+        }
 
         const rows = myTeacher
           ? await getBookingsByTeacher(myTeacher.id)
@@ -161,10 +189,161 @@ export default function Dashboard() {
     );
   };
 
+  // ── Save teacher profile inline ──
+  const handleSaveTeacher = async () => {
+    if (!teacherId) return;
+    setSavingTeacher(true);
+    setTeacherSaveErr("");
+    try {
+      await updateTeacher(teacherId, {
+        bio_en: tBioEn,
+        bio_de: tBioDe,
+        bio_ar: tBioAr,
+        hourly_rate: Number(tRate) || 0,
+        experience: Number(tExp) || 0,
+        phone: tPhone || null,
+        contact_email: tEmail || null,
+      } as Partial<TeacherRow>);
+      setTeacherSaveOk(true);
+      setTimeout(() => setTeacherSaveOk(false), 3000);
+    } catch (err: unknown) {
+      setTeacherSaveErr(err instanceof Error ? err.message : "Fehler beim Speichern");
+    } finally {
+      setSavingTeacher(false);
+    }
+  };
+
   // ── Settings panel (inline) ──
   const renderSettings = () => (
     <div className="space-y-6">
       <UserProfileSettings />
+
+      {/* ── Teacher profile editor (only if user is a teacher) ── */}
+      {teacherId && teacherRow && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 space-y-5">
+          <h2 className="text-xl font-bold text-[#1A1A2E] flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-[#2F7A5B]" />
+            Lehrerprofil bearbeiten
+          </h2>
+
+          {/* Bio fields */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              Biografie (Englisch)
+            </label>
+            <textarea
+              value={tBioEn}
+              onChange={(e) => setTBioEn(e.target.value)}
+              rows={3}
+              placeholder="Write your bio in English..."
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B]/40 focus:border-[#2F7A5B] transition-all resize-none"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              Biografie (Deutsch)
+            </label>
+            <textarea
+              value={tBioDe}
+              onChange={(e) => setTBioDe(e.target.value)}
+              rows={3}
+              placeholder="Schreibe deine Biografie auf Deutsch..."
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B]/40 focus:border-[#2F7A5B] transition-all resize-none"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              السيرة الذاتية (عربي)
+            </label>
+            <textarea
+              value={tBioAr}
+              onChange={(e) => setTBioAr(e.target.value)}
+              rows={3}
+              dir="rtl"
+              placeholder="اكتب سيرتك الذاتية بالعربي..."
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B]/40 focus:border-[#2F7A5B] transition-all resize-none"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                Stundensatz (€)
+              </label>
+              <input
+                type="number"
+                min={0}
+                value={tRate}
+                onChange={(e) => setTRate(e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B]/40 focus:border-[#2F7A5B] transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                Jahre Erfahrung
+              </label>
+              <input
+                type="number"
+                min={0}
+                value={tExp}
+                onChange={(e) => setTExp(e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B]/40 focus:border-[#2F7A5B] transition-all"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                Telefonnummer
+              </label>
+              <input
+                type="tel"
+                value={tPhone}
+                onChange={(e) => setTPhone(e.target.value)}
+                placeholder="+49 123 456 7890"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B]/40 focus:border-[#2F7A5B] transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                Kontakt-E-Mail
+              </label>
+              <input
+                type="email"
+                value={tEmail}
+                onChange={(e) => setTEmail(e.target.value)}
+                placeholder="teacher@example.com"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B]/40 focus:border-[#2F7A5B] transition-all"
+              />
+            </div>
+          </div>
+
+          {teacherSaveOk && (
+            <div className="p-3 bg-[#2F7A5B]/10 border border-[#2F7A5B]/20 rounded-xl text-[#2F7A5B] text-sm font-medium">
+              ✓ Lehrerprofil erfolgreich gespeichert!
+            </div>
+          )}
+          {teacherSaveErr && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
+              {teacherSaveErr}
+            </div>
+          )}
+
+          <button
+            onClick={handleSaveTeacher}
+            disabled={savingTeacher}
+            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#2F7A5B] to-[#3a8b6a] text-white rounded-xl font-semibold hover:from-[#3a8b6a] hover:to-[#4a9b7a] transition-all duration-300 shadow-lg shadow-[#2F7A5B]/20 disabled:opacity-60"
+          >
+            {savingTeacher ? (
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            Lehrerprofil speichern
+          </button>
+        </div>
+      )}
 
       <div className="border-t border-gray-100 pt-6 mt-6">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 space-y-6">
@@ -184,20 +363,6 @@ export default function Dashboard() {
                 <p className="font-semibold text-[#1A1A2E]">{user?.email ?? "—"}</p>
               </div>
             </div>
-
-            {/* Edit teacher profile */}
-            {teacherId && (
-              <Link
-                to={`/teacher/${teacherId}?edit=1`}
-                className="flex items-center gap-3 p-4 rounded-xl border border-[#2F7A5B]/20 hover:bg-[#2F7A5B]/5 transition-colors"
-              >
-                <BookOpen className="w-5 h-5 text-[#2F7A5B]" />
-                <span className="font-medium text-[#1A1A2E]">
-                  {t("dashboard.editTeacherProfile", { defaultValue: "Lehrerprofil bearbeiten" })}
-                </span>
-                <ArrowRight className="w-4 h-4 ml-auto text-gray-400" />
-              </Link>
-            )}
 
             {/* Become teacher */}
             {!teacherId && (

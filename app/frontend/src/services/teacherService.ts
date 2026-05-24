@@ -26,15 +26,16 @@ interface TeacherRow {
   contact_email: string | null;
 }
 
-function mapRowToTeacher(row: TeacherRow): Teacher {
+function mapRowToTeacher(row: TeacherRow, profileAvatar?: string): Teacher {
   if (!row.id) {
     console.error('[teacherService] Teacher row is missing id — row:', JSON.stringify(row));
   }
   return {
-    id: row.id,          // bleibt undefined wenn nicht gesetzt; Guards in TeacherCard + FeaturedTeachersGrid fangen das ab
+    id: row.id,
     user_id: row.user_id || undefined,
     name: { ar: row.name_ar, en: row.name_en, de: row.name_de },
-    avatar: row.avatar || '',
+    // Profile avatar takes priority over the teachers.avatar field
+    avatar: profileAvatar || row.avatar || '',
     banner: row.banner || '',
     specializations: row.specializations || [],
     experience: row.experience,
@@ -48,10 +49,8 @@ function mapRowToTeacher(row: TeacherRow): Teacher {
   };
 }
 
-// 'banner' is intentionally omitted: the column may not exist yet in older DBs.
-// Run: ALTER TABLE teachers ADD COLUMN IF NOT EXISTS banner TEXT;
-// then add 'banner' back to this list to enable banner images.
-const TEACHER_COLUMNS = 'id, user_id, name_ar, name_en, name_de, avatar, specializations, bio_ar, bio_en, bio_de, services, experience, hourly_rate, rating, reviews_count, is_pro, featured, approved, created_at, phone, contact_email';
+// 'banner' is safe to include once: ALTER TABLE teachers ADD COLUMN IF NOT EXISTS banner TEXT;
+const TEACHER_COLUMNS = 'id, user_id, name_ar, name_en, name_de, avatar, banner, specializations, bio_ar, bio_en, bio_de, services, experience, hourly_rate, rating, reviews_count, is_pro, featured, approved, created_at, phone, contact_email';
 
 export async function getTeachers(): Promise<Teacher[]> {
   const { data, error } = await supabase
@@ -62,7 +61,28 @@ export async function getTeachers(): Promise<Teacher[]> {
   if (error) throw error;
   if (!data) return [];
 
-  return data.map((row: TeacherRow) => mapRowToTeacher(row));
+  // Batch-fetch profile avatars for all teacher user_ids (2 queries total, not N+1)
+  const userIds = (data as TeacherRow[])
+    .filter((r) => r.user_id)
+    .map((r) => r.user_id as string);
+
+  const profileAvatarMap = new Map<string, string>();
+  if (userIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, avatar_url')
+      .in('id', userIds);
+    if (profiles) {
+      for (const p of profiles) {
+        if (p.avatar_url) profileAvatarMap.set(p.id, p.avatar_url);
+      }
+    }
+  }
+
+  return (data as TeacherRow[]).map((row) => {
+    const profileAvatar = row.user_id ? profileAvatarMap.get(row.user_id) : undefined;
+    return mapRowToTeacher(row, profileAvatar);
+  });
 }
 
 export async function getAllTeachers(): Promise<TeacherRow[]> {
@@ -127,18 +147,12 @@ interface CreateTeacherData {
 }
 
 export async function createTeacher(data: CreateTeacherData): Promise<TeacherRow | null> {
-  // Strip 'banner' from the INSERT — if the column doesn't exist in the DB the
-  // insert would throw "Could not find the 'banner' column in the schema cache".
-  // After running: ALTER TABLE teachers ADD COLUMN IF NOT EXISTS banner TEXT;
-  // you can pass banner back through the data object.
-  const { banner: _bannerInsert, ...insertData } = data;
-
   // Step 1: Pure insert — do NOT chain .select().single() here.
   // After insert the row has approved=false, so the SELECT-policy (approved=true)
   // would block the read and trigger a PGRST116 "no rows returned" error.
   const { error: insertError } = await supabase
     .from('teachers')
-    .insert([insertData]);
+    .insert([data]);
 
   if (insertError) throw insertError;
 
@@ -165,14 +179,9 @@ export async function createTeacher(data: CreateTeacherData): Promise<TeacherRow
 }
 
 export async function updateTeacher(id: string, updates: Partial<TeacherRow>) {
-  // Strip 'banner' from the UPDATE to avoid "column not found" on old DB schemas.
-  // After running: ALTER TABLE teachers ADD COLUMN IF NOT EXISTS banner TEXT;
-  // remove this destructuring so banner updates are saved correctly.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { banner: _bannerUpdate, ...payload } = updates;
   const { error } = await supabase
     .from('teachers')
-    .update(payload)
+    .update(updates)
     .eq('id', id);
 
   if (error) throw error;

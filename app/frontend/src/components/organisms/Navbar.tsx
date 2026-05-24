@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, LogOut, LayoutDashboard, Shield, GraduationCap, Bell } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import SecondaryButton from "@/components/atoms/SecondaryButton";
@@ -22,6 +22,11 @@ export default function Navbar() {
   const [isTeacher, setIsTeacher] = useState(false);
   const { lang, t, setLanguage, dir } = useLanguage();
   const { isAuthenticated, userName, user, logout } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Active-link helper — returns true when the path matches
+  const isActive = (path: string) => location.pathname === path;
 
   useEffect(() => {
     let cancelled = false;
@@ -58,7 +63,13 @@ export default function Navbar() {
   };
 
   const handleLogout = async () => {
-    await logout();
+    try {
+      await logout();
+    } catch {
+      // ignore sign-out errors
+    } finally {
+      navigate("/", { replace: true });
+    }
   };
 
   const isAdmin = user?.email === "noahalsamawi688@gmail.com";
@@ -96,7 +107,11 @@ export default function Navbar() {
             <div className="hidden md:flex items-center gap-6">
               <Link
                 to="/"
-                className="text-[#1A1A2E] hover:text-[#2F7A5B] font-medium transition-colors"
+                className={`font-medium transition-all duration-200 relative after:absolute after:bottom-[-2px] after:left-0 after:h-[2px] after:rounded-full after:bg-[#2F7A5B] after:transition-all after:duration-200 ${
+                  isActive("/")
+                    ? "text-[#2F7A5B] after:w-full"
+                    : "text-[#1A1A2E] hover:text-[#2F7A5B] after:w-0 hover:after:w-full"
+                }`}
               >
                 {t("nav.home")}
               </Link>
@@ -109,7 +124,11 @@ export default function Navbar() {
               {!isTeacher && (
                 <Link
                   to="/onboarding"
-                  className="text-[#1A1A2E] hover:text-[#2F7A5B] font-medium transition-colors flex items-center gap-1"
+                  className={`font-medium transition-all duration-200 flex items-center gap-1 relative after:absolute after:bottom-[-2px] after:left-0 after:h-[2px] after:rounded-full after:bg-[#2F7A5B] after:transition-all after:duration-200 ${
+                    isActive("/onboarding")
+                      ? "text-[#2F7A5B] after:w-full"
+                      : "text-[#1A1A2E] hover:text-[#2F7A5B] after:w-0 hover:after:w-full"
+                  }`}
                 >
                   <GraduationCap className="w-4 h-4" />
                   {t("nav.onboarding")}
@@ -134,7 +153,11 @@ export default function Navbar() {
               {isAdmin && (
                 <Link
                   to="/admin"
-                  className="flex items-center gap-1.5 text-[#DCA842] font-medium hover:underline"
+                  className={`flex items-center gap-1.5 font-medium transition-all duration-200 ${
+                    isActive("/admin")
+                      ? "text-[#b8891e] underline"
+                      : "text-[#DCA842] hover:underline"
+                  }`}
                 >
                   <Shield className="w-4 h-4" />
                   {t("nav.admin")}
@@ -145,7 +168,11 @@ export default function Navbar() {
                 <div className="flex items-center gap-3">
                   <Link
                     to="/dashboard"
-                    className="flex items-center gap-1.5 text-[#2F7A5B] font-medium hover:underline"
+                    className={`flex items-center gap-1.5 font-medium transition-all duration-200 ${
+                      isActive("/dashboard")
+                        ? "text-[#25694A] bg-[#2F7A5B]/10 px-2.5 py-1 rounded-lg"
+                        : "text-[#2F7A5B] hover:underline"
+                    }`}
                   >
                     <LayoutDashboard className="w-4 h-4" />
                     {t("nav.dashboard")}
