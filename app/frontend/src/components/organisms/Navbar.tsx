@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, LogOut, LayoutDashboard, Shield, GraduationCap, Bell } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import SecondaryButton from "@/components/atoms/SecondaryButton";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -20,6 +21,7 @@ export default function Navbar() {
   const [authOpen, setAuthOpen] = useState(false);
   const [authTab, setAuthTab] = useState<"login" | "register">("login");
   const [isTeacher, setIsTeacher] = useState(false);
+  const [profileName, setProfileName] = useState<string | null>(null);
   const { lang, t, setLanguage, dir } = useLanguage();
   const { isAuthenticated, userName, user, logout } = useAuth();
   const location = useLocation();
@@ -27,6 +29,45 @@ export default function Navbar() {
 
   // Active-link helper — returns true when the path matches
   const isActive = (path: string) => location.pathname === path;
+
+  // ── Fetch + subscribe to profiles.name so the displayed name stays live
+  //    even when the user renames themselves in Settings (no page reload needed)
+  useEffect(() => {
+    if (!user?.id) { setProfileName(null); return; }
+
+    // Initial fetch
+    supabase
+      .from("profiles")
+      .select("name")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.name) setProfileName(data.name);
+      });
+
+    // Realtime subscription — fires when the profiles row is updated
+    const channel = supabase
+      .channel(`navbar-profile:${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "profiles",
+          filter: `id=eq.${user.id}`,
+        },
+        (payload) => {
+          const newName = (payload.new as { name?: string })?.name;
+          if (newName !== undefined) setProfileName(newName || null);
+        }
+      )
+      .subscribe();
+
+    return () => { channel.unsubscribe(); };
+  }, [user?.id]);
+
+  // Resolved display name: live profile name > auth metadata fallback
+  const displayName = profileName || userName;
 
   useEffect(() => {
     let cancelled = false;
@@ -164,7 +205,7 @@ export default function Navbar() {
                 </Link>
               )}
 
-              {isAuthenticated && userName ? (
+              {isAuthenticated && displayName ? (
                 <div className="flex items-center gap-3">
                   <Link
                     to="/dashboard"
@@ -191,11 +232,11 @@ export default function Navbar() {
                   <div className="flex items-center gap-2">
                     <div
                       className="w-8 h-8 rounded-full bg-[#2F7A5B] text-white text-sm font-bold flex items-center justify-center flex-shrink-0 select-none"
-                      title={userName}
+                      title={displayName}
                     >
-                      {userName.charAt(0).toUpperCase()}
+                      {displayName.charAt(0).toUpperCase()}
                     </div>
-                    <span className="text-sm text-gray-600">{userName}</span>
+                    <span className="text-sm text-gray-600">{displayName}</span>
                   </div>
                   <button
                     onClick={handleLogout}
@@ -286,7 +327,7 @@ export default function Navbar() {
                       </SheetClose>
                     )}
 
-                    {isAuthenticated && userName ? (
+                    {isAuthenticated && displayName ? (
                       <>
                         <SheetClose asChild>
                           <Link
