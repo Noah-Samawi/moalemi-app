@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { BookOpen, History, Settings, ChevronRight, ChevronLeft, LayoutDashboard, GraduationCap, Video } from "lucide-react";
+import { BookOpen, History, Settings, ChevronRight, ChevronLeft, LayoutDashboard, GraduationCap, Video, MessageCircle } from "lucide-react";
 import AvatarAtom from "@/components/atoms/AvatarAtom";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
@@ -97,6 +97,22 @@ export default function DashboardSidebar({
           );
         })}
       </nav>
+
+      {/* ── Mein Chat quick-access ── */}
+      <div className={`px-3 pt-2 pb-1 ${collapsed ? "px-2" : ""}`}>
+        <Link
+          to="/classroom"
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200
+            bg-gradient-to-r from-[#2F7A5B] to-[#3a8b6a] text-white shadow-md shadow-[#2F7A5B]/25
+            hover:from-[#3a8b6a] hover:to-[#4a9b7a] hover:shadow-[#2F7A5B]/40`}
+          title="Mein Chat"
+        >
+          <MessageCircle className="w-4 h-4 flex-shrink-0" />
+          {!collapsed && (
+            <span className="truncate">Mein Chat <span className="opacity-75 text-xs font-normal">(Ustadh Ahmad)</span></span>
+          )}
+        </Link>
+      </div>
 
       <div className={`p-3 border-t border-gray-100 space-y-2 ${collapsed ? "px-2" : ""}`}>
         {!collapsed && (

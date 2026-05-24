@@ -10,7 +10,7 @@ import { getTeacherByUserId } from "@/services/teacherService";
 import { getChannelByBookingId } from "@/services/channelService";
 import {
   BookOpen, History, Settings, Video, Clock, CheckCircle,
-  Calendar, Users, ArrowRight, User, Bell, LogOut,
+  Calendar, Users, ArrowRight, User, Bell, LogOut, MessageCircle,
 } from "lucide-react";
 
 // ── Upcoming = pending / scheduled / confirmed; History = completed / cancelled ──
@@ -304,6 +304,49 @@ export default function Dashboard() {
                     </p>
                     <p className="text-2xl font-bold text-[#DCA842]">{upcomingLessons}</p>
                   </div>
+                </div>
+              </div>
+
+              {/* ── PRO Status card ── */}
+              <div className="relative overflow-hidden mb-6 rounded-2xl p-5 bg-gradient-to-br from-[#1A1A2E] to-[#2d1c00]">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#DCA842]/20 via-transparent to-[#DCA842]/10 pointer-events-none" />
+                <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-[#DCA842]/10 blur-3xl pointer-events-none" />
+                <span className="absolute top-4 right-4 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-[#DCA842] to-[#C49535] text-[#1A1A2E] text-xs font-black tracking-wider shadow-lg">
+                  ★ PRO
+                </span>
+                <div className="relative z-10">
+                  <p className="text-[#DCA842] text-xs font-semibold uppercase tracking-widest mb-1">Premium Zugang</p>
+                  <h3 className="text-white text-xl font-bold mb-1">Alle Funktionen freigeschaltet</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    Unbegrenzte Buchungen · Virtuelles Klassenzimmer · Prioritätssupport
+                  </p>
+                  <div className="mt-3 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[#DCA842] animate-pulse inline-block" />
+                    <span className="text-[#DCA842] text-xs font-semibold">PRO aktiv</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Letzte Aktivitäten ── */}
+              <div className="mb-6">
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 px-1">
+                  Letzte Aktivitäten
+                </h3>
+                <div className="bg-white rounded-xl border border-[#2F7A5B]/20 shadow-sm p-4 flex items-start gap-3 hover:border-[#2F7A5B]/40 transition-all duration-200 cursor-default">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#2F7A5B] to-[#3a8b6a] flex items-center justify-center flex-shrink-0 shadow-md">
+                    <MessageCircle className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-[#1A1A2E]">Neue Nachricht von Ustadh Ahmad</p>
+                    <p className="text-xs text-gray-400 mt-0.5">vor 5 Minuten</p>
+                  </div>
+                  <button
+                    onClick={() => navigate("/classroom")}
+                    className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-[#2F7A5B] to-[#3a8b6a] text-white text-xs font-bold rounded-lg hover:from-[#3a8b6a] hover:to-[#4a9b7a] transition-all duration-200 shadow-sm whitespace-nowrap"
+                  >
+                    <MessageCircle className="w-3 h-3" />
+                    💬 Live Chat öffnen
+                  </button>
                 </div>
               </div>
 

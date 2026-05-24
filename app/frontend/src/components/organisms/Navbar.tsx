@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Menu, LogOut, LayoutDashboard, Shield, GraduationCap } from "lucide-react";
+import { Menu, LogOut, LayoutDashboard, Shield, GraduationCap, Bell } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import SecondaryButton from "@/components/atoms/SecondaryButton";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -150,6 +150,17 @@ export default function Navbar() {
                     <LayoutDashboard className="w-4 h-4" />
                     {t("nav.dashboard")}
                   </Link>
+
+                  {/* ── Bell notification ── */}
+                  <button
+                    className="relative p-1.5 text-gray-500 hover:text-[#2F7A5B] transition-colors duration-200 rounded-lg hover:bg-[#2F7A5B]/10"
+                    title="Benachrichtigungen"
+                    aria-label="Benachrichtigungen"
+                  >
+                    <Bell className="w-4 h-4" />
+                    <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
+                  </button>
+
                   <div className="flex items-center gap-2">
                     <div
                       className="w-8 h-8 rounded-full bg-[#2F7A5B] text-white text-sm font-bold flex items-center justify-center flex-shrink-0 select-none"
