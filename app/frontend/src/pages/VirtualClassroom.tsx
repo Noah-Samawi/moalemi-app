@@ -166,7 +166,9 @@ export default function VirtualClassroom() {
       return;
     }
 
-    const roomName = `moalemi-${selectedChannel.id}`.replace(/-/g, '');
+    // Use the jitsi_room slug stored by the trigger (created on booking insert).
+    // Fall back to a derived slug in case the channel pre-dates the trigger.
+    const roomName = (selectedChannel.jitsi_room ?? `moalemi-${selectedChannel.id}`).replace(/-/g, '');
     const displayName = userProfile?.user_metadata?.name || userProfile?.email || 'User';
 
     // @ts-ignore - Jitsi is loaded dynamically

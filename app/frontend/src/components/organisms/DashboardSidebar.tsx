@@ -55,7 +55,7 @@ export default function DashboardSidebar({
 
       <nav className="flex-1 p-3 space-y-1">
         <Link
-          to="/dashboard"
+          to="/"
           className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
             location.pathname === "/dashboard" && !activeTab
               ? "bg-gradient-to-r from-[#2F7A5B] to-[#3a8b6a] text-white shadow-lg shadow-[#2F7A5B]/20"

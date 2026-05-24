@@ -89,10 +89,14 @@ export default function AuthModal({
     setLoading(true);
     try {
       await signUp(email, password, name);
-      setSuccess(t("auth.registerSuccess"));
-      onAuthSuccess?.(name);
-      onOpenChange(false);
-      resetForm();
+      // Do NOT close the modal or call onAuthSuccess immediately —
+      // the user must verify their e-mail address first.
+      setSuccess(
+        `✉️ Bestätigungs-E-Mail gesendet an ${email}.\n` +
+        `Bitte klicke auf den Link in der E-Mail, um dein Konto zu aktivieren. ` +
+        `Danach kannst du dich hier einloggen.`
+      );
+      // Keep the modal open so the user can read the message.
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Registration failed";
       if (message.includes("already registered")) {

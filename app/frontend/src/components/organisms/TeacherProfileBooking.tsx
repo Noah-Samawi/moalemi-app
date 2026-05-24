@@ -59,21 +59,15 @@ export default function TeacherProfileBooking({ teacher }: TeacherProfileBooking
     }
 
     try {
-      const startMinutes = Number(data.startTime.split(":")[0]) * 60 + Number(data.startTime.split(":")[1]);
-      const endMinutes = Number(data.endTime.split(":")[0]) * 60 + Number(data.endTime.split(":")[1]);
-      const durationHours = Math.max((endMinutes - startMinutes) / 60, 0.5);
-
       await createBooking({
         student_id: user.id,
         teacher_id: teacherIdParam,
-        subject_ar: teacher.services[0]?.name.ar || teacher.specializations[0]?.ar || "درس",
-        subject_en: teacher.services[0]?.name.en || teacher.specializations[0]?.en || "Lesson",
-        subject_de: teacher.services[0]?.name.de || teacher.specializations[0]?.de || "Unterricht",
-        date: data.selectedDate,
-        time: `${data.startTime} - ${data.endTime}`,
-        duration_ar: `${durationHours} ساعة`,
-        duration_en: `${durationHours} hour(s)`,
-        duration_de: `${durationHours} Stunde(n)`,
+        booking_date: data.selectedDate,
+        start_time: data.startTime,
+        end_time: data.endTime,
+        student_name: data.userName,
+        notes: data.notes || undefined,
+        total_price: data.totalPrice,
       });
     } catch (err) {
       console.error("[Booking] createBooking error:", err);

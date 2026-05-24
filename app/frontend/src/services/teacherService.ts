@@ -46,7 +46,10 @@ function mapRowToTeacher(row: TeacherRow): Teacher {
   };
 }
 
-const TEACHER_COLUMNS = 'id, user_id, name_ar, name_en, name_de, avatar, banner, specializations, bio_ar, bio_en, bio_de, services, experience, hourly_rate, rating, reviews_count, is_pro, featured, approved, created_at';
+// 'banner' is intentionally omitted: the column may not exist yet in older DBs.
+// Run: ALTER TABLE teachers ADD COLUMN IF NOT EXISTS banner TEXT;
+// then add 'banner' back to this list to enable banner images.
+const TEACHER_COLUMNS = 'id, user_id, name_ar, name_en, name_de, avatar, specializations, bio_ar, bio_en, bio_de, services, experience, hourly_rate, rating, reviews_count, is_pro, featured, approved, created_at';
 
 export async function getTeachers(): Promise<Teacher[]> {
   const { data, error } = await supabase
@@ -120,12 +123,18 @@ interface CreateTeacherData {
 }
 
 export async function createTeacher(data: CreateTeacherData): Promise<TeacherRow | null> {
+  // Strip 'banner' from the INSERT — if the column doesn't exist in the DB the
+  // insert would throw "Could not find the 'banner' column in the schema cache".
+  // After running: ALTER TABLE teachers ADD COLUMN IF NOT EXISTS banner TEXT;
+  // you can pass banner back through the data object.
+  const { banner: _bannerInsert, ...insertData } = data;
+
   // Step 1: Pure insert — do NOT chain .select().single() here.
   // After insert the row has approved=false, so the SELECT-policy (approved=true)
   // would block the read and trigger a PGRST116 "no rows returned" error.
   const { error: insertError } = await supabase
     .from('teachers')
-    .insert([data]);
+    .insert([insertData]);
 
   if (insertError) throw insertError;
 
@@ -152,10 +161,14 @@ export async function createTeacher(data: CreateTeacherData): Promise<TeacherRow
 }
 
 export async function updateTeacher(id: string, updates: Partial<TeacherRow>) {
-  // Do NOT chain .select().single() — RLS blocks the read for unapproved teachers.
+  // Strip 'banner' from the UPDATE to avoid "column not found" on old DB schemas.
+  // After running: ALTER TABLE teachers ADD COLUMN IF NOT EXISTS banner TEXT;
+  // remove this destructuring so banner updates are saved correctly.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { banner: _bannerUpdate, ...payload } = updates;
   const { error } = await supabase
     .from('teachers')
-    .update(updates)
+    .update(payload)
     .eq('id', id);
 
   if (error) throw error;

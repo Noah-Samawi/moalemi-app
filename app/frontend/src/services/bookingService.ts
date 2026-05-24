@@ -34,7 +34,7 @@ export async function createBooking(data: CreateBookingData) {
     .from('bookings')
     .insert([data])
     .select(BOOKING_COLUMNS)
-    .single();
+    .maybeSingle(); // .single() throws PGRST116 if RLS blocks read-back; maybeSingle() returns null instead
 
   if (error) throw error;
   return result;

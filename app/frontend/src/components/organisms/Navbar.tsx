@@ -150,7 +150,15 @@ export default function Navbar() {
                     <LayoutDashboard className="w-4 h-4" />
                     {t("nav.dashboard")}
                   </Link>
-                  <span className="text-sm text-gray-600">{userName}</span>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-8 h-8 rounded-full bg-[#2F7A5B] text-white text-sm font-bold flex items-center justify-center flex-shrink-0 select-none"
+                      title={userName}
+                    >
+                      {userName.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-sm text-gray-600">{userName}</span>
+                  </div>
                   <button
                     onClick={handleLogout}
                     className="flex items-center gap-1 text-red-500 hover:text-red-700 text-sm font-medium"

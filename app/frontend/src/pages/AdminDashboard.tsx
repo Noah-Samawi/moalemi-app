@@ -199,7 +199,12 @@ export default function AdminDashboard() {
       setTeacherRows((prev) => prev.filter((_, i) => i !== index));
     } catch (err: unknown) {
       console.error('[Admin] deleteTeacher error:', err);
-      const msg = err instanceof Error ? err.message : String(err);
+      // Supabase errors are plain objects ({ message, code, details }) — not Error instances.
+      const msg = err instanceof Error
+        ? err.message
+        : (err && typeof err === 'object' && 'message' in err)
+          ? String((err as { message: unknown }).message)
+          : JSON.stringify(err);
       showToast(`Fehler beim Löschen: ${msg}`);
     }
   };
