@@ -183,23 +183,18 @@ export default function AdminDashboard() {
     }
   };
 
-  const deleteTeacher = async (index: number) => {
-    const rowId = findRowId(index);
-    if (!rowId) {
-      console.warn('[Admin] deleteTeacher: kein rowId für Index', index, '— teacherRows:', teacherRows[index]);
-      showToast('Fehler: Lehrer-ID nicht gefunden. Seite neu laden und erneut versuchen.');
-      return;
-    }
+  // Accepts the UUID directly (from teacherRows[index].id) so no integer mock-ID
+  // can ever be forwarded to Supabase as a uuid parameter.
+  const deleteTeacher = async (rowUuid: string, index: number) => {
     const confirmed = window.confirm('Lehrer wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.');
     if (!confirmed) return;
     try {
-      await deleteTeacherService(rowId);
+      await deleteTeacherService(rowUuid);
       showToast(t("admin.teacherDeleted"));
       setTeacherList((prev) => prev.filter((_, i) => i !== index));
       setTeacherRows((prev) => prev.filter((_, i) => i !== index));
     } catch (err: unknown) {
       console.error('[Admin] deleteTeacher error:', err);
-      // Supabase errors are plain objects ({ message, code, details }) — not Error instances.
       const msg = err instanceof Error
         ? err.message
         : (err && typeof err === 'object' && 'message' in err)
@@ -392,7 +387,16 @@ export default function AdminDashboard() {
                     </td>
                     <td className="px-6 py-4">
                       <button
-                        onClick={() => deleteTeacher(index)}
+                        onClick={() => {
+                          // Read the UUID from teacherRows — never from teacherList,
+                          // which may contain mock teachers with integer IDs.
+                          const rowUuid = teacherRows[index]?.id;
+                          if (!rowUuid) {
+                            showToast('Fehler: Lehrer-ID nicht gefunden. Nur gespeicherte Datenbankeinträge können gelöscht werden.');
+                            return;
+                          }
+                          deleteTeacher(rowUuid, index);
+                        }}
                         className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
                       >
                         <Trash2 className="w-3 h-3" />
