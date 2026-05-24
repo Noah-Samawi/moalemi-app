@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { supabase } from '@/lib/supabase';
@@ -16,42 +16,80 @@ import {
   Message,
   UserProfile,
 } from '@/services/channelService';
-import { Send, LogOut, MessageCircle, Video, Loader, ArrowLeft } from 'lucide-react';
+import { Send, LogOut, MessageCircle, Video, Loader, ArrowLeft, PhoneCall, PhoneOff } from 'lucide-react';
+
+// ─── Ring helpers ────────────────────────────────────────────────────────────
+
+function playBeep() {
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    [0, 0.55, 1.1].forEach((delay) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.45, ctx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.45);
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + 0.45);
+    });
+  } catch { /* ignore AudioContext restrictions */ }
+}
+
+function playRingTone() {
+  try {
+    const audio = new Audio('/ringtone.mp3');
+    audio.volume = 0.7;
+    audio.play().catch(() => playBeep());
+  } catch {
+    playBeep();
+  }
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
+interface RingState {
+  visible: boolean;
+  callerName: string;
+}
 
 export default function VirtualClassroom() {
-  const navigate = useNavigate();
+  const navigate    = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user } = useSupabaseAuth();
-  const [channels, setChannels] = useState<Channel[]>([]);
+  const { user }    = useSupabaseAuth();
+
+  const [channels,        setChannels]        = useState<Channel[]>([]);
   const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [messages,        setMessages]        = useState<Message[]>([]);
+  const [newMessage,      setNewMessage]      = useState('');
+  const [loading,         setLoading]         = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [jitsiReady, setJitsiReady] = useState(false);
-  const [showVideo, setShowVideo] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const jitsiContainerRef = useRef<HTMLDivElement>(null);
+  const [userProfile,     setUserProfile]     = useState<UserProfile | null>(null);
+  const [jitsiReady,      setJitsiReady]      = useState(false);
+  const [showVideo,       setShowVideo]       = useState(false);
+  const [ringState,       setRingState]       = useState<RingState>({ visible: false, callerName: '' });
+
+  const messagesEndRef         = useRef<HTMLDivElement>(null);
+  const jitsiContainerRef      = useRef<HTMLDivElement>(null);
   const unsubscribeMessagesRef = useRef<(() => void) | null>(null);
   const unsubscribeChannelsRef = useRef<(() => void) | null>(null);
+  const broadcastRef           = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const ringTimerRef           = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const bookingIdFromUrl = searchParams.get('bookingId');
 
-  // Load user profile
+  // ── Load user profile ──────────────────────────────────────────────────────
   useEffect(() => {
-    async function loadProfile() {
-      try {
-        const profile = await getUserProfile();
-        setUserProfile(profile);
-      } catch (err) {
-        console.error('Error loading user profile:', err);
-      }
-    }
-    loadProfile();
+    getUserProfile()
+      .then((p) => setUserProfile(p))
+      .catch((err) => console.error('[VC] profile load error:', err));
   }, []);
 
-  // Load channels
+  // ── Load channels ──────────────────────────────────────────────────────────
   useEffect(() => {
     async function loadChannels() {
       try {
@@ -60,18 +98,18 @@ export default function VirtualClassroom() {
         setChannels(userChannels);
 
         if (bookingIdFromUrl) {
-          const channelByBooking = userChannels.find((c) => c.booking_id === bookingIdFromUrl);
-          if (channelByBooking) {
-            setSelectedChannel(channelByBooking);
+          const found = userChannels.find((c) => c.booking_id === bookingIdFromUrl);
+          if (found) {
+            setSelectedChannel(found);
           } else {
-            const freshChannel = await getChannelByBookingId(bookingIdFromUrl);
-            if (freshChannel) setSelectedChannel(freshChannel);
+            const fresh = await getChannelByBookingId(bookingIdFromUrl);
+            if (fresh) setSelectedChannel(fresh);
           }
-        } else if (userChannels.length > 0 && !selectedChannel) {
-          setSelectedChannel(userChannels[0]);
+        } else if (userChannels.length > 0) {
+          setSelectedChannel((prev) => prev ?? userChannels[0]);
         }
       } catch (err) {
-        console.error('Error loading channels:', err);
+        console.error('[VC] load channels error:', err);
       } finally {
         setLoading(false);
       }
@@ -79,16 +117,12 @@ export default function VirtualClassroom() {
 
     loadChannels();
 
-    // Subscribe to new channels
-    const unsubscribe = subscribeToUserChannels((newChannel) => {
+    const unsubscribe = subscribeToUserChannels((updated) => {
       setChannels((prev) => {
-        const exists = prev.find((c) => c.id === newChannel.id);
-        if (exists) {
-          return prev.map((c) => (c.id === newChannel.id ? newChannel : c));
-        }
-        return [...prev, newChannel].sort(
-          (a, b) =>
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        const exists = prev.find((c) => c.id === updated.id);
+        if (exists) return prev.map((c) => (c.id === updated.id ? updated : c));
+        return [updated, ...prev].sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         );
       });
     });
@@ -97,23 +131,19 @@ export default function VirtualClassroom() {
     return () => unsubscribe();
   }, [bookingIdFromUrl]);
 
-  // Load messages for selected channel
+  // ── Load messages when channel changes ────────────────────────────────────
   useEffect(() => {
     if (!selectedChannel) return;
 
     async function loadMessages() {
       try {
         setLoadingMessages(true);
-        const hasAccess = await hasChannelAccess(selectedChannel.id);
-        if (!hasAccess) {
-          console.error('No access to this channel');
-          return;
-        }
-
-        const channelMessages = await getChannelMessages(selectedChannel.id, 100);
-        setMessages(channelMessages);
+        const ok = await hasChannelAccess(selectedChannel!.id);
+        if (!ok) { console.error('[VC] no channel access'); return; }
+        const msgs = await getChannelMessages(selectedChannel!.id, 100);
+        setMessages(msgs);
       } catch (err) {
-        console.error('Error loading messages:', err);
+        console.error('[VC] load messages error:', err);
       } finally {
         setLoadingMessages(false);
       }
@@ -121,101 +151,178 @@ export default function VirtualClassroom() {
 
     loadMessages();
 
-    // Subscribe to new messages
-    const unsubscribe = subscribeToChannelMessages(selectedChannel.id, (newMessage) => {
-      setMessages((prev) => [...prev, newMessage]);
+    // Real-time subscription — deduplicate against optimistic messages
+    const unsub = subscribeToChannelMessages(selectedChannel.id, (incoming) => {
+      setMessages((prev) => {
+        // Replace a matching optimistic placeholder with the real server row
+        const optimisticIdx = prev.findIndex(
+          (m) =>
+            m.id.startsWith('optimistic-') &&
+            m.sender_id === incoming.sender_id &&
+            m.content === incoming.content
+        );
+        if (optimisticIdx !== -1) {
+          const next = [...prev];
+          next[optimisticIdx] = incoming;
+          return next;
+        }
+        // Skip exact ID duplicate (shouldn't happen, but guard anyway)
+        if (prev.find((m) => m.id === incoming.id)) return prev;
+        return [...prev, incoming];
+      });
     });
 
-    unsubscribeMessagesRef.current = unsubscribe;
-    return () => unsubscribe();
-  }, [selectedChannel]);
+    unsubscribeMessagesRef.current = unsub;
+    return () => unsub();
+  }, [selectedChannel?.id]);
 
-  // Auto-scroll to latest message
+  // ── Broadcast channel for video-call ringing ──────────────────────────────
+  useEffect(() => {
+    if (!selectedChannel || !user) return;
+
+    // Tear down any previous broadcast channel
+    if (broadcastRef.current) {
+      broadcastRef.current.unsubscribe();
+      broadcastRef.current = null;
+    }
+
+    const ch = supabase
+      .channel(`vc-ring:${selectedChannel.id}`)
+      .on('broadcast', { event: 'call:ring' }, (payload) => {
+        // Ignore our own broadcast echo
+        if (payload.payload?.callerId === user.id) return;
+
+        const callerName = payload.payload?.callerName ?? 'Dein Gesprächspartner';
+        setRingState({ visible: true, callerName });
+        playRingTone();
+
+        // Auto-dismiss after 20 s
+        if (ringTimerRef.current) clearTimeout(ringTimerRef.current);
+        ringTimerRef.current = setTimeout(() => {
+          setRingState({ visible: false, callerName: '' });
+        }, 20_000);
+      })
+      .subscribe();
+
+    broadcastRef.current = ch;
+
+    return () => {
+      ch.unsubscribe();
+      broadcastRef.current = null;
+      if (ringTimerRef.current) clearTimeout(ringTimerRef.current);
+    };
+  }, [selectedChannel?.id, user?.id]);
+
+  // ── Auto-scroll to latest message ─────────────────────────────────────────
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Load Jitsi Script
+  // ── Jitsi script loader ───────────────────────────────────────────────────
   useEffect(() => {
     if (!showVideo) return;
 
     const scriptId = 'jitsi-meet-external-api';
-    if (document.getElementById(scriptId)) {
-      setJitsiReady(true);
-      return;
-    }
+    if (document.getElementById(scriptId)) { setJitsiReady(true); return; }
 
-    const script = document.createElement('script');
-    script.id = scriptId;
-    script.src = 'https://meet.jit.si/external_api.js';
-    script.async = true;
-    script.onload = () => setJitsiReady(true);
-    script.onerror = () => console.error('Failed to load Jitsi');
+    const script      = document.createElement('script');
+    script.id         = scriptId;
+    script.src        = 'https://meet.jit.si/external_api.js';
+    script.async      = true;
+    script.onload     = () => setJitsiReady(true);
+    script.onerror    = () => console.error('[VC] Failed to load Jitsi');
     document.body.appendChild(script);
 
     return () => {
-      if (document.getElementById(scriptId)) {
-        document.body.removeChild(script);
-      }
+      if (document.getElementById(scriptId)) document.body.removeChild(script);
     };
   }, [showVideo]);
 
-  // Initialize Jitsi
+  // ── Initialize Jitsi ──────────────────────────────────────────────────────
   useEffect(() => {
-    if (!jitsiReady || !showVideo || !jitsiContainerRef.current || !selectedChannel) {
-      return;
-    }
+    if (!jitsiReady || !showVideo || !jitsiContainerRef.current || !selectedChannel) return;
 
-    // Use the jitsi_room slug stored by the trigger (created on booking insert).
-    // Fall back to a derived slug in case the channel pre-dates the trigger.
-    const roomName = (selectedChannel.jitsi_room ?? `moalemi-${selectedChannel.id}`).replace(/-/g, '');
+    const roomName    = (selectedChannel.jitsi_room ?? `moalemi-${selectedChannel.id}`).replace(/-/g, '');
     const displayName = userProfile?.user_metadata?.name || userProfile?.email || 'User';
 
-    // @ts-ignore - Jitsi is loaded dynamically
+    // @ts-ignore — Jitsi loaded dynamically
     const api = new window.JitsiMeetExternalAPI('meet.jit.si', {
-      roomName: roomName,
+      roomName,
       parentNode: jitsiContainerRef.current,
-      userInfo: {
-        displayName: displayName,
-      },
-      configOverwrite: {
-        startWithAudioMuted: true,
-        startWithVideoMuted: true,
-      },
-      interfaceConfigOverwrite: {
-        SHOW_JITSI_WATERMARK: false,
-        SHOW_WATERMARK_FOR_GUESTS: false,
-      },
+      userInfo: { displayName },
+      configOverwrite:          { startWithAudioMuted: true, startWithVideoMuted: true },
+      interfaceConfigOverwrite: { SHOW_JITSI_WATERMARK: false, SHOW_WATERMARK_FOR_GUESTS: false },
     });
 
-    return () => {
-      api.dispose();
-    };
-  }, [jitsiReady, showVideo, selectedChannel, userProfile]);
+    return () => api.dispose();
+  }, [jitsiReady, showVideo, selectedChannel?.id, userProfile]);
 
-  // Handle send message
+  // ── Send message (optimistic) ─────────────────────────────────────────────
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !selectedChannel) return;
+    if (!newMessage.trim() || !selectedChannel || !user) return;
+
+    const optimisticId  = `optimistic-${Date.now()}`;
+    const senderName    = userProfile?.user_metadata?.name || userProfile?.email?.split('@')[0] || 'You';
+    const optimisticMsg: Message = {
+      id:          optimisticId,
+      channel_id:  selectedChannel.id,
+      sender_id:   user.id,
+      sender_name: senderName,
+      content:     newMessage.trim(),
+      type:        'text',
+      metadata:    {},
+      is_pinned:   false,
+      created_at:  new Date().toISOString(),
+    };
+
+    // Show immediately
+    setMessages((prev) => [...prev, optimisticMsg]);
+    const msgText = newMessage;
+    setNewMessage('');
 
     try {
-      await sendMessage(selectedChannel.id, newMessage);
-      setNewMessage('');
+      await sendMessage(selectedChannel.id, msgText);
     } catch (err) {
-      console.error('Error sending message:', err);
+      console.error('[VC] send message error:', err);
+      // Rollback optimistic update
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+      setNewMessage(msgText);
     }
   };
 
-  // Handle logout
+  // ── Toggle video + broadcast ring ─────────────────────────────────────────
+  const handleToggleVideo = useCallback(async () => {
+    if (!showVideo && selectedChannel && user && broadcastRef.current) {
+      // Ring the other participant before opening video
+      try {
+        const callerName = userProfile?.user_metadata?.name || userProfile?.email || 'User';
+        await broadcastRef.current.send({
+          type:    'broadcast',
+          event:   'call:ring',
+          payload: { callerId: user.id, callerName, channelId: selectedChannel.id },
+        });
+      } catch (err) {
+        console.warn('[VC] broadcast ring error:', err);
+      }
+    }
+    setShowVideo((v) => !v);
+  }, [showVideo, selectedChannel?.id, user?.id, userProfile]);
+
+  // ── Answer ring ───────────────────────────────────────────────────────────
+  const handleAnswerCall = () => {
+    setRingState({ visible: false, callerName: '' });
+    if (ringTimerRef.current) clearTimeout(ringTimerRef.current);
+    setShowVideo(true);
+  };
+
+  // ── Logout ────────────────────────────────────────────────────────────────
   const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      navigate('/');
-    } catch (err) {
-      console.error('Error logging out:', err);
-    }
+    await supabase.auth.signOut().catch(console.error);
+    navigate('/');
   };
 
+  // ── Auth guard ────────────────────────────────────────────────────────────
   if (!user) {
     return (
       <div className="h-screen flex items-center justify-center bg-gradient-to-br from-[#1A1A2E] to-[#2F7A5B]">
@@ -232,9 +339,11 @@ export default function VirtualClassroom() {
     );
   }
 
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="h-screen flex bg-gradient-to-br from-[#1A1A2E] via-[#1e1e3a] to-[#2a2a4a] text-white">
-      {/* Sidebar - Channels List */}
+
+      {/* ── Sidebar ── */}
       <div className="w-72 bg-[#16162a] border-r border-white/10 flex flex-col shadow-2xl">
         {/* Header */}
         <div className="p-5 border-b border-white/10 bg-gradient-to-r from-[#2F7A5B] to-[#3a8b6a]">
@@ -253,7 +362,7 @@ export default function VirtualClassroom() {
           </div>
         </div>
 
-        {/* Channels List */}
+        {/* Channels list */}
         <div className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="p-4 text-center">
@@ -262,9 +371,7 @@ export default function VirtualClassroom() {
           ) : channels.length === 0 ? (
             <div className="p-5">
               <p className="text-sm text-white/50">No channels yet</p>
-              <p className="text-xs text-white/30 mt-2">
-                Book a lesson with a teacher to create a channel
-              </p>
+              <p className="text-xs text-white/30 mt-2">Book a lesson with a teacher to create a channel</p>
             </div>
           ) : (
             <div className="space-y-1 p-3">
@@ -293,7 +400,7 @@ export default function VirtualClassroom() {
           )}
         </div>
 
-        {/* User Section */}
+        {/* User section */}
         <div className="border-t border-white/10 p-4 bg-[#12122a]">
           <button
             onClick={handleLogout}
@@ -305,11 +412,40 @@ export default function VirtualClassroom() {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      {/* ── Main content ── */}
+      <div className="flex-1 flex flex-col relative">
+
+        {/* ── Incoming call notification overlay ── */}
+        {ringState.visible && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 bg-[#1A1A2E] border border-[#2F7A5B]/50 rounded-2xl px-6 py-4 shadow-2xl shadow-black/60 backdrop-blur-md">
+            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#2F7A5B] to-[#3a8b6a] flex items-center justify-center animate-pulse flex-shrink-0">
+              <PhoneCall className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-white font-semibold text-sm">📹 Eingehender Videoanruf</p>
+              <p className="text-white/60 text-xs">{ringState.callerName} ruft an…</p>
+            </div>
+            <button
+              onClick={handleAnswerCall}
+              className="px-4 py-2 bg-gradient-to-r from-[#2F7A5B] to-[#3a8b6a] text-white text-xs font-bold rounded-xl hover:from-[#3a8b6a] hover:to-[#4a9b7a] transition-all"
+            >
+              Annehmen
+            </button>
+            <button
+              onClick={() => {
+                setRingState({ visible: false, callerName: '' });
+                if (ringTimerRef.current) clearTimeout(ringTimerRef.current);
+              }}
+              className="px-4 py-2 bg-white/10 text-white/70 text-xs font-bold rounded-xl hover:bg-white/20 transition-all"
+            >
+              <PhoneOff className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {selectedChannel ? (
           <>
-            {/* Top Bar */}
+            {/* Top bar */}
             <div className="border-b border-white/10 p-5 flex items-center justify-between bg-[#1A1A2E]/60 backdrop-blur-md">
               <div>
                 <h2 className="text-lg font-semibold text-white">{selectedChannel.name}</h2>
@@ -318,7 +454,7 @@ export default function VirtualClassroom() {
                 </p>
               </div>
               <button
-                onClick={() => setShowVideo(!showVideo)}
+                onClick={handleToggleVideo}
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all duration-300 shadow-lg ${
                   showVideo
                     ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-red-500/25'
@@ -326,29 +462,21 @@ export default function VirtualClassroom() {
                 }`}
               >
                 <Video className="w-4 h-4" />
-                <span className="text-sm">
-                  {showVideo ? 'End Video' : 'Start Video'}
-                </span>
+                <span className="text-sm">{showVideo ? 'End Video' : 'Start Video'}</span>
               </button>
             </div>
 
-            {/* Content Area */}
-            <div className="flex-1 flex">
-              {/* Video Area */}
+            {/* Content area */}
+            <div className="flex-1 flex overflow-hidden">
+              {/* Jitsi */}
               {showVideo && (
                 <div className="w-1/2 border-r border-white/10 bg-black/30">
-                  <div
-                    ref={jitsiContainerRef}
-                    className="w-full h-full"
-                    style={{ minHeight: '400px' }}
-                  />
+                  <div ref={jitsiContainerRef} className="w-full h-full" style={{ minHeight: '400px' }} />
                 </div>
               )}
 
-              {/* Chat Area */}
-              <div
-                className={`flex flex-col ${showVideo ? 'w-1/2' : 'w-full'}`}
-              >
+              {/* Chat */}
+              <div className={`flex flex-col ${showVideo ? 'w-1/2' : 'w-full'}`}>
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-[#16162a]/30">
                   {loadingMessages ? (
@@ -361,36 +489,34 @@ export default function VirtualClassroom() {
                       <p>No messages yet. Start the conversation!</p>
                     </div>
                   ) : (
-                    messages.map((msg, idx) => {
+                    messages.map((msg) => {
                       const isOwn = msg.sender_id === user?.id;
+                      const isBot = msg.type === 'bot';
+                      const isPending = msg.id.startsWith('optimistic-');
                       return (
-                        <div
-                          key={msg.id}
-                          className={`flex ${
-                            isOwn ? 'justify-end' : 'justify-start'
-                          }`}
-                        >
-                          <div
-                            className={`max-w-xs px-5 py-3 rounded-2xl text-sm shadow-lg transition-all ${
-                              isOwn
-                                ? 'bg-gradient-to-r from-[#2F7A5B] to-[#3a8b6a] text-white rounded-br-sm'
-                                : 'bg-white/10 text-white/90 rounded-bl-sm border border-white/10'
-                            }`}
-                          >
-                            <p className="leading-relaxed">{msg.content}</p>
-                            <p
-                              className={`text-xs mt-1.5 ${
+                        <div key={msg.id} className={`flex ${isBot ? 'justify-center' : isOwn ? 'justify-end' : 'justify-start'}`}>
+                          {isBot ? (
+                            <div className="max-w-sm px-5 py-3 rounded-2xl text-xs bg-[#2F7A5B]/20 border border-[#2F7A5B]/30 text-white/70 text-center">
+                              {msg.content}
+                            </div>
+                          ) : (
+                            <div
+                              className={`max-w-xs px-5 py-3 rounded-2xl text-sm shadow-lg transition-opacity ${
+                                isPending ? 'opacity-60' : 'opacity-100'
+                              } ${
                                 isOwn
-                                  ? 'text-white/60'
-                                  : 'text-white/40'
+                                  ? 'bg-gradient-to-r from-[#2F7A5B] to-[#3a8b6a] text-white rounded-br-sm'
+                                  : 'bg-white/10 text-white/90 rounded-bl-sm border border-white/10'
                               }`}
                             >
-                              {new Date(msg.created_at).toLocaleTimeString([], {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
-                            </p>
-                          </div>
+                              <p className="leading-relaxed">{msg.content}</p>
+                              <p className={`text-xs mt-1.5 ${isOwn ? 'text-white/60' : 'text-white/40'}`}>
+                                {isPending
+                                  ? 'Sending…'
+                                  : new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       );
                     })
@@ -398,17 +524,14 @@ export default function VirtualClassroom() {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Message Input */}
+                {/* Message input */}
                 <div className="border-t border-white/10 p-5 bg-[#1A1A2E]/60 backdrop-blur-md">
-                  <form
-                    onSubmit={handleSendMessage}
-                    className="flex gap-3"
-                  >
+                  <form onSubmit={handleSendMessage} className="flex gap-3">
                     <input
                       type="text"
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
-                      placeholder="Type a message..."
+                      placeholder="Type a message…"
                       className="flex-1 bg-white/10 border border-white/15 rounded-xl px-5 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#2F7A5B] focus:bg-white/15 transition-all"
                     />
                     <button
@@ -430,9 +553,7 @@ export default function VirtualClassroom() {
                 <MessageCircle className="w-10 h-10 text-[#2F7A5B]" />
               </div>
               <p className="text-2xl text-white/70 mb-3 font-medium">No channel selected</p>
-              <p className="text-white/40">
-                Book a lesson to get started
-              </p>
+              <p className="text-white/40">Book a lesson to get started</p>
             </div>
           </div>
         )}

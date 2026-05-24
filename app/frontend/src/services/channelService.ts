@@ -137,10 +137,24 @@ export async function sendMessage(channelId: string, content: string): Promise<M
       },
     ])
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
-  return data as Message;
+
+  // If RLS blocked the SELECT read-back, return a synthetic message so the
+  // caller always gets a valid object (the real-time subscription will deliver
+  // the canonical row shortly after).
+  return (data as Message) ?? {
+    id: `local-${Date.now()}`,
+    channel_id: channelId,
+    sender_id: user.id,
+    sender_name: senderName,
+    content: content.trim(),
+    type: 'text',
+    metadata: {},
+    is_pinned: false,
+    created_at: new Date().toISOString(),
+  };
 }
 
 /**
