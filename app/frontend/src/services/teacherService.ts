@@ -96,12 +96,12 @@ export async function getTeacherByUserId(userId: string): Promise<TeacherRow | n
 export async function getTeacherRowById(id: string): Promise<TeacherRow | null> {
   const { data, error } = await supabase
     .from('teachers')
-    .select('*')
+    .select(TEACHER_COLUMNS)
     .eq('id', id)
-    .single();
+    .maybeSingle();          // .single() würde PGRST116 für nicht-approved Rows werfen
 
   if (error) throw error;
-  return data as TeacherRow | null;
+  return (data as TeacherRow | null) ?? null;
 }
 
 interface CreateTeacherData {
