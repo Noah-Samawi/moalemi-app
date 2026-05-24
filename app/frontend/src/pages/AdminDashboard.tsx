@@ -127,7 +127,14 @@ export default function AdminDashboard() {
     );
   }
 
-  const findRowId = (index: number): string | null => teacherRows[index]?.id ?? null;
+  // Gibt die UUID des Lehrers zurück — prüft teacherRows zuerst, dann teacherList als Fallback
+  const findRowId = (index: number): string | null => {
+    const fromRow = teacherRows[index]?.id;
+    if (fromRow) return fromRow;
+    const fromList = teacherList[index]?.id;
+    if (fromList) return String(fromList);
+    return null;
+  };
 
   const togglePro = async (index: number) => {
     const rowId = findRowId(index);
@@ -179,17 +186,21 @@ export default function AdminDashboard() {
   const deleteTeacher = async (index: number) => {
     const rowId = findRowId(index);
     if (!rowId) {
-      setTeacherList((prev) => prev.filter((_, i) => i !== index));
+      console.warn('[Admin] deleteTeacher: kein rowId für Index', index, '— teacherRows:', teacherRows[index]);
+      showToast('Fehler: Lehrer-ID nicht gefunden. Seite neu laden und erneut versuchen.');
       return;
     }
+    const confirmed = window.confirm('Lehrer wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.');
+    if (!confirmed) return;
     try {
       await deleteTeacherService(rowId);
       showToast(t("admin.teacherDeleted"));
       setTeacherList((prev) => prev.filter((_, i) => i !== index));
       setTeacherRows((prev) => prev.filter((_, i) => i !== index));
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[Admin] deleteTeacher error:', err);
-      showToast(t("admin.actionFailed"));
+      const msg = err instanceof Error ? err.message : String(err);
+      showToast(`Fehler beim Löschen: ${msg}`);
     }
   };
 

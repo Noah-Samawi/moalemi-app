@@ -25,8 +25,11 @@ interface TeacherRow {
 }
 
 function mapRowToTeacher(row: TeacherRow): Teacher {
+  if (!row.id) {
+    console.error('[teacherService] Teacher row is missing id — row:', JSON.stringify(row));
+  }
   return {
-    id: row.id,
+    id: row.id,          // bleibt undefined wenn nicht gesetzt; Guards in TeacherCard + FeaturedTeachersGrid fangen das ab
     user_id: row.user_id || undefined,
     name: { ar: row.name_ar, en: row.name_en, de: row.name_de },
     avatar: row.avatar || '',
@@ -43,10 +46,12 @@ function mapRowToTeacher(row: TeacherRow): Teacher {
   };
 }
 
+const TEACHER_COLUMNS = 'id, user_id, name_ar, name_en, name_de, avatar, banner, specializations, bio_ar, bio_en, bio_de, services, experience, hourly_rate, rating, reviews_count, is_pro, featured, approved, created_at';
+
 export async function getTeachers(): Promise<Teacher[]> {
   const { data, error } = await supabase
     .from('teachers')
-    .select('*')
+    .select(TEACHER_COLUMNS)
     .eq('approved', true);
 
   if (error) throw error;
@@ -58,7 +63,7 @@ export async function getTeachers(): Promise<Teacher[]> {
 export async function getAllTeachers(): Promise<TeacherRow[]> {
   const { data, error } = await supabase
     .from('teachers')
-    .select('*');
+    .select(TEACHER_COLUMNS);
 
   if (error) throw error;
   return data || [];

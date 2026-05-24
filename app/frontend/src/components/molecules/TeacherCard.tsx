@@ -17,7 +17,7 @@ export default function TeacherCard({ teacher }: TeacherCardProps) {
   return (
     <div
       className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 p-6 cursor-pointer"
-      onClick={() => navigate(`/teacher/${teacher.id}`)}
+      onClick={() => teacher.id && navigate(`/teacher/${teacher.id}`)}
     >
       <div className="flex items-start gap-4 mb-4">
         <AvatarAtom src={teacher.avatar} alt={teacher.name[lang]} size="lg" />
@@ -54,7 +54,7 @@ export default function TeacherCard({ teacher }: TeacherCardProps) {
       </div>
 
       <div className="mt-4">
-        <PrimaryButton className="w-full" onClick={(e) => { e.stopPropagation(); navigate(`/teacher/${teacher.id}`); }}>
+        <PrimaryButton className="w-full" onClick={(e) => { e.stopPropagation(); if (teacher.id) navigate(`/teacher/${teacher.id}`); }}>
           {t("teacher.bookNow")}
         </PrimaryButton>
       </div>

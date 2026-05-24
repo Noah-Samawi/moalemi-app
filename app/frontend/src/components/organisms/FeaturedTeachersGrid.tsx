@@ -32,7 +32,7 @@ export default function FeaturedTeachersGrid() {
     return () => { cancelled = true; };
   }, []);
 
-  const sortedTeachers = [...teacherList].sort((a, b) => {
+  const sortedTeachers = [...teacherList].filter((t) => !!t.id).sort((a, b) => {
     if (a.featured && a.is_pro && !(b.featured && b.is_pro)) return -1;
     if (b.featured && b.is_pro && !(a.featured && a.is_pro)) return 1;
     return b.rating - a.rating;
