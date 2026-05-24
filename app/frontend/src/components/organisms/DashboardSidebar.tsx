@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { BookOpen, History, Settings, ChevronRight, ChevronLeft, LayoutDashboard, GraduationCap, Video } from "lucide-react";
 import AvatarAtom from "@/components/atoms/AvatarAtom";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
+import { getProfile } from "@/services/profileService";
+import { usePresence } from "@/hooks/usePresence";
 
 interface DashboardSidebarProps {
   userName?: string;
@@ -20,8 +22,20 @@ export default function DashboardSidebar({
 }: DashboardSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const { t, dir } = useLanguage();
-  const { userName: contextUserName } = useAuth();
+  const { userName: contextUserName, user } = useAuth();
   const location = useLocation();
+  const [profile, setProfile] = useState<{ name: string | null; avatar_url: string | null; last_seen: string | null } | null>(null);
+
+  usePresence();
+
+  useEffect(() => {
+    if (!user?.id) return;
+    getProfile(user.id).then(setProfile).catch(() => {});
+  }, [user?.id]);
+
+  const isOnline = profile?.last_seen ? (Date.now() - new Date(profile.last_seen).getTime()) < 2 * 60 * 1000 : false;
+  const realAvatar = profile?.avatar_url ?? userAvatar;
+  const displayName = profile?.name ?? contextUserName ?? userNameProp ?? t("dashboard.user");
 
   const navItems = [
     { id: "upcoming", label: t("dashboard.upcoming"), icon: BookOpen },
@@ -29,8 +43,6 @@ export default function DashboardSidebar({
     { id: "classroom", label: t("dashboard.classroom", { defaultValue: "Virtual Classroom" }), icon: Video },
     { id: "settings", label: t("dashboard.settings"), icon: Settings },
   ];
-
-  const displayName = contextUserName || userNameProp || t("dashboard.user");
 
   return (
     <aside
@@ -41,13 +53,13 @@ export default function DashboardSidebar({
       <div className={`p-4 border-b border-gray-100 ${collapsed ? "px-3" : ""}`}>
         <div className="flex items-center gap-3">
           <div className="relative">
-            <AvatarAtom src={userAvatar} alt={displayName} size="sm" />
-            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full" />
+            <AvatarAtom src={realAvatar} alt={displayName} size="sm" />
+            <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 ${isOnline ? "bg-green-500" : "bg-gray-400"} border-2 border-white rounded-full`} />
           </div>
           {!collapsed && (
             <div className="flex flex-col min-w-0">
               <span className="font-semibold text-[#1A1A2E] text-sm truncate">{displayName}</span>
-              <span className="text-xs text-[#2F7A5B]">Online</span>
+              <span className={`text-xs ${isOnline ? "text-[#2F7A5B]" : "text-gray-400"}`}>{isOnline ? "Online" : "Offline"}</span>
             </div>
           )}
         </div>

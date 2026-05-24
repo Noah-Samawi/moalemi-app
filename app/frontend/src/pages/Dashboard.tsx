@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/organisms/Navbar";
 import DashboardSidebar from "@/components/organisms/DashboardSidebar";
+import UserProfileSettings from "@/components/organisms/UserProfileSettings";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import { getBookingsByStudent, getBookingsByTeacher, type BookingRow } from "@/services/bookingService";
@@ -162,61 +163,67 @@ export default function Dashboard() {
 
   // ── Settings panel (inline) ──
   const renderSettings = () => (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 space-y-6">
-      <h2 className="text-xl font-bold text-[#1A1A2E] flex items-center gap-2">
-        <Settings className="w-5 h-5 text-[#2F7A5B]" />
-        {t("dashboard.settings", { defaultValue: "Einstellungen" })}
-      </h2>
+    <div className="space-y-6">
+      <UserProfileSettings />
 
-      <div className="space-y-4">
-        {/* Account */}
-        <div className="flex items-center gap-4 p-4 rounded-xl bg-[#FDF8F0] border border-gray-100">
-          <div className="w-10 h-10 rounded-full bg-[#2F7A5B]/10 flex items-center justify-center">
-            <User className="w-5 h-5 text-[#2F7A5B]" />
+      <div className="border-t border-gray-100 pt-6 mt-6">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 space-y-6">
+          <h2 className="text-xl font-bold text-[#1A1A2E] flex items-center gap-2">
+            <Settings className="w-5 h-5 text-[#2F7A5B]" />
+            {t("dashboard.settings", { defaultValue: "Einstellungen" })}
+          </h2>
+
+          <div className="space-y-4">
+            {/* Account */}
+            <div className="flex items-center gap-4 p-4 rounded-xl bg-[#FDF8F0] border border-gray-100">
+              <div className="w-10 h-10 rounded-full bg-[#2F7A5B]/10 flex items-center justify-center">
+                <User className="w-5 h-5 text-[#2F7A5B]" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">{t("auth.email", { defaultValue: "E-Mail" })}</p>
+                <p className="font-semibold text-[#1A1A2E]">{user?.email ?? "—"}</p>
+              </div>
+            </div>
+
+            {/* Edit teacher profile */}
+            {teacherId && (
+              <Link
+                to={`/teacher/${teacherId}?edit=1`}
+                className="flex items-center gap-3 p-4 rounded-xl border border-[#2F7A5B]/20 hover:bg-[#2F7A5B]/5 transition-colors"
+              >
+                <BookOpen className="w-5 h-5 text-[#2F7A5B]" />
+                <span className="font-medium text-[#1A1A2E]">
+                  {t("dashboard.editTeacherProfile", { defaultValue: "Lehrerprofil bearbeiten" })}
+                </span>
+                <ArrowRight className="w-4 h-4 ml-auto text-gray-400" />
+              </Link>
+            )}
+
+            {/* Become teacher */}
+            {!teacherId && (
+              <Link
+                to="/onboarding"
+                className="flex items-center gap-3 p-4 rounded-xl border border-[#DCA842]/30 hover:bg-[#DCA842]/5 transition-colors"
+              >
+                <BookOpen className="w-5 h-5 text-[#DCA842]" />
+                <span className="font-medium text-[#1A1A2E]">
+                  {t("dashboard.becomeTeacher", { defaultValue: "Lehrer werden" })}
+                </span>
+                <ArrowRight className="w-4 h-4 ml-auto text-gray-400" />
+              </Link>
+            )}
+
+            {/* Notifications placeholder */}
+            <div className="flex items-center gap-3 p-4 rounded-xl border border-gray-100 bg-gray-50">
+              <Bell className="w-5 h-5 text-gray-400" />
+              <span className="text-gray-500">
+                {t("dashboard.notifications", { defaultValue: "Benachrichtigungen" })}
+              </span>
+              <span className="ml-auto text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full">
+                {t("dashboard.comingSoon", { defaultValue: "Bald verfügbar" })}
+              </span>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-gray-500">{t("auth.email", { defaultValue: "E-Mail" })}</p>
-            <p className="font-semibold text-[#1A1A2E]">{user?.email ?? "—"}</p>
-          </div>
-        </div>
-
-        {/* Edit teacher profile */}
-        {teacherId && (
-          <Link
-            to={`/teacher/${teacherId}?edit=1`}
-            className="flex items-center gap-3 p-4 rounded-xl border border-[#2F7A5B]/20 hover:bg-[#2F7A5B]/5 transition-colors"
-          >
-            <BookOpen className="w-5 h-5 text-[#2F7A5B]" />
-            <span className="font-medium text-[#1A1A2E]">
-              {t("dashboard.editTeacherProfile", { defaultValue: "Lehrerprofil bearbeiten" })}
-            </span>
-            <ArrowRight className="w-4 h-4 ml-auto text-gray-400" />
-          </Link>
-        )}
-
-        {/* Become teacher */}
-        {!teacherId && (
-          <Link
-            to="/onboarding"
-            className="flex items-center gap-3 p-4 rounded-xl border border-[#DCA842]/30 hover:bg-[#DCA842]/5 transition-colors"
-          >
-            <BookOpen className="w-5 h-5 text-[#DCA842]" />
-            <span className="font-medium text-[#1A1A2E]">
-              {t("dashboard.becomeTeacher", { defaultValue: "Lehrer werden" })}
-            </span>
-            <ArrowRight className="w-4 h-4 ml-auto text-gray-400" />
-          </Link>
-        )}
-
-        {/* Notifications placeholder */}
-        <div className="flex items-center gap-3 p-4 rounded-xl border border-gray-100 bg-gray-50">
-          <Bell className="w-5 h-5 text-gray-400" />
-          <span className="text-gray-500">
-            {t("dashboard.notifications", { defaultValue: "Benachrichtigungen" })}
-          </span>
-          <span className="ml-auto text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full">
-            {t("dashboard.comingSoon", { defaultValue: "Bald verfügbar" })}
-          </span>
         </div>
       </div>
     </div>

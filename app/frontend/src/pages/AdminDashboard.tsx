@@ -325,6 +325,8 @@ export default function AdminDashboard() {
                   <th className="px-6 py-3 text-sm font-semibold text-gray-600">{t("admin.pro")}</th>
                   <th className="px-6 py-3 text-sm font-semibold text-gray-600">{t("admin.featured")}</th>
                   <th className="px-6 py-3 text-sm font-semibold text-gray-600">{t("admin.approve")}</th>
+                  <th className="px-6 py-3 text-sm font-semibold text-gray-600">E-Mail</th>
+                  <th className="px-6 py-3 text-sm font-semibold text-gray-600">Telefon</th>
                   <th className="px-6 py-3 text-sm font-semibold text-gray-600">{t("admin.delete")}</th>
                 </tr>
               </thead>
@@ -384,6 +386,12 @@ export default function AdminDashboard() {
                         <Check className="w-3 h-3 me-1" />
                         {t("admin.approve")}
                       </SecondaryButton>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-xs text-gray-600">{teacherRows[index]?.contact_email ?? "—"}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-xs text-gray-600">{teacherRows[index]?.phone ?? "—"}</span>
                     </td>
                     <td className="px-6 py-4">
                       <button

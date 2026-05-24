@@ -22,6 +22,8 @@ interface TeacherRow {
   featured: boolean;
   approved: boolean;
   created_at: string;
+  phone: string | null;
+  contact_email: string | null;
 }
 
 function mapRowToTeacher(row: TeacherRow): Teacher {
@@ -49,7 +51,7 @@ function mapRowToTeacher(row: TeacherRow): Teacher {
 // 'banner' is intentionally omitted: the column may not exist yet in older DBs.
 // Run: ALTER TABLE teachers ADD COLUMN IF NOT EXISTS banner TEXT;
 // then add 'banner' back to this list to enable banner images.
-const TEACHER_COLUMNS = 'id, user_id, name_ar, name_en, name_de, avatar, specializations, bio_ar, bio_en, bio_de, services, experience, hourly_rate, rating, reviews_count, is_pro, featured, approved, created_at';
+const TEACHER_COLUMNS = 'id, user_id, name_ar, name_en, name_de, avatar, specializations, bio_ar, bio_en, bio_de, services, experience, hourly_rate, rating, reviews_count, is_pro, featured, approved, created_at, phone, contact_email';
 
 export async function getTeachers(): Promise<Teacher[]> {
   const { data, error } = await supabase
@@ -120,6 +122,8 @@ interface CreateTeacherData {
   experience: number;
   avatar?: string;
   banner?: string;
+  phone?: string;
+  contact_email?: string;
 }
 
 export async function createTeacher(data: CreateTeacherData): Promise<TeacherRow | null> {

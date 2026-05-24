@@ -28,6 +28,8 @@ export default function TeacherOnboarding() {
     specializations: "",
     hourlyRate: "",
     experience: "",
+    phone: "",
+    contactEmail: "",
   });
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -61,6 +63,8 @@ export default function TeacherOnboarding() {
             .join(", "),
           hourlyRate: String(teacher.hourly_rate ?? ""),
           experience: String(teacher.experience ?? ""),
+          phone: teacher.phone || "",
+          contactEmail: teacher.contact_email || "",
         });
         setAvatarUrl(teacher.avatar || "");
         setBannerUrl(teacher.banner || "");
@@ -110,6 +114,8 @@ export default function TeacherOnboarding() {
           experience: Number(form.experience),
           avatar: avatarUrl || null,
           banner: bannerUrl || null,
+          phone: form.phone || null,
+          contact_email: form.contactEmail || null,
         });
       } else {
         // CREATE new teacher
@@ -126,6 +132,8 @@ export default function TeacherOnboarding() {
           experience: Number(form.experience),
           avatar: avatarUrl || undefined,
           banner: bannerUrl || undefined,
+          phone: form.phone || undefined,
+          contact_email: form.contactEmail || undefined,
         });
 
         // created?.id may be empty string when RLS blocks the post-insert SELECT
@@ -362,6 +370,39 @@ export default function TeacherOnboarding() {
             </div>
           </div>
 
+          {/* Kontaktdaten */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-[#1A1A2E] border-b border-gray-100 pb-2">
+              Kontaktdaten
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Telefonnummer *</label>
+                <input
+                  type="tel"
+                  value={form.phone}
+                  onChange={(e) => handleChange("phone", e.target.value)}
+                  placeholder="+49 123 456 7890"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B] focus:border-transparent"
+                  required
+                  disabled={submitting}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Kontakt-E-Mail *</label>
+                <input
+                  type="email"
+                  value={form.contactEmail}
+                  onChange={(e) => handleChange("contactEmail", e.target.value)}
+                  placeholder="kontakt@example.com"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B] focus:border-transparent"
+                  required
+                  disabled={submitting}
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Images */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -411,7 +452,7 @@ export default function TeacherOnboarding() {
           </div>
 
           <div className="pt-2">
-            <PrimaryButton type="submit" className="w-full py-3" disabled={submitting}>
+            <PrimaryButton type="submit" className="w-full py-3" disabled={submitting || !form.phone || !form.contactEmail}>
               {submitting ? (
                 <span className="flex items-center justify-center gap-2">
                   <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
