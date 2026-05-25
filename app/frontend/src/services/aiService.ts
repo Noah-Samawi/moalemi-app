@@ -223,18 +223,22 @@ async function callAI(
   history: ChatMessage[],
   userMessage: string
 ): Promise<string> {
-  const messages = [
-    { role: "system", content: systemPrompt },
-    ...history.map((m) => ({ role: m.role, content: m.content })),
-    { role: "user", content: userMessage },
-  ];
-
   try {
     const res = await fetch("/api/ai-chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages }),
+      body: JSON.stringify({ systemPrompt, history, userMessage }),
     });
+
+    if (res.status === 503) {
+      return (
+        "⚠️ Der KI-Assistent ist derzeit nicht konfiguriert.\n\n" +
+        "Bitte setze `OPENAI_API_KEY` oder `GROQ_API_KEY` in den Vercel-Umgebungsvariablen:\n" +
+        "Vercel Dashboard → Project → Settings → Environment Variables\n\n" +
+        "Die Wissensbasis (Arabisch, Quran, Tajweed) ist bereits geladen und wird sofort aktiv, " +
+        "sobald der API-Schlüssel gesetzt ist."
+      );
+    }
 
     if (!res.ok) {
       const errText = await res.text().catch(() => res.statusText);
@@ -242,21 +246,16 @@ async function callAI(
     }
 
     const json = await res.json();
-    // Support both OpenAI-style response and a simple { reply } envelope
     return (
-      json?.choices?.[0]?.message?.content ??
       json?.reply ??
+      json?.choices?.[0]?.message?.content ??
       "Entschuldigung, keine Antwort vom Server erhalten."
     );
   } catch (err) {
     console.error("[aiService] callAI error:", err);
-    // Friendly offline fallback so the UI doesn't crash when the endpoint
-    // isn't configured yet
     return (
-      "🔧 Der KI-Dienst ist noch nicht konfiguriert. " +
-      "Ein Admin muss den API-Schlüssel in der Backend-Konfiguration hinterlegen. " +
-      "Die Wissensbasis (Arabisch, Quran, Tajweed) ist bereits geladen und wird " +
-      "aktiviert, sobald das Backend verbunden ist."
+      "⚠️ Verbindungsfehler zum KI-Dienst. " +
+      "Bitte überprüfe deine Internetverbindung oder setze den API-Schlüssel in den Vercel-Einstellungen."
     );
   }
 }
@@ -267,23 +266,69 @@ async function callAI(
 
 export async function sendAiMessage(
   userMessage: string,
-  history: ChatMessage[]
+  history: ChatMessage[],
+  /** Optional document text extracted from an uploaded file */
+  documentContext?: string
 ): Promise<AiChatResponse> {
   const { context, sourceNames } = await buildSystemContext();
 
+  const docSection = documentContext
+    ? `\n\n=== UPLOADED DOCUMENT (Student attachment) ===\n${documentContext.slice(0, 8000)}\n=== END OF DOCUMENT ===\n`
+    : "";
+
   const systemPrompt = `
-You are Moalemi AI — a helpful, knowledgeable educational assistant focused on:
-• The Arabic language (alphabet, grammar, vocabulary)
-• The Holy Quran (context, meaning, recitation)
-• Tajweed rules (Noon Sakinah, Meem Sakinah, Madd, Ghunna, Qalqalah, etc.)
-• General Islamic studies
+You are Moalemi AI (مساعد معلمي الذكي) — a specialized educational assistant for Arabic, Quran, and Tajweed.
 
-Always respond in the same language the student uses (Arabic, German, or English).
-Be clear, accurate, and encouraging. Use structured lists when explaining rules.
-Cite which rule category you are explaining when relevant.
+════ LANGUAGE RULE ════
+CRITICAL: Always detect and match the user's language automatically:
+• If the user writes in Arabic (العربية) → respond fully in Arabic.
+• If the user writes in German (Deutsch) → respond fully in German.
+• If the user writes in English → respond fully in English.
+Never mix languages within a single response unless quoting an Arabic verse or term.
 
-You have access to the following knowledge:
-${context}
+════ EXPERTISE ════
+You are an expert in:
+1. Arabic Language (اللغة العربية):
+   - Arabic alphabet (28 letters), pronunciation, short & long vowels, Sukoon, Shadda
+   - Arabic grammar basics: nouns, verbs, roots (جذور), sentence structure
+   - Classical Arabic (الفصحى) vs Modern Standard Arabic vs colloquial dialects
+   - Importance of Arabic as the language of the Quran
+
+2. The Holy Quran (القرآن الكريم):
+   - 114 Surahs, 6,236 Ayat, revelation over ~23 years
+   - Meccan vs Medinan revelations (السور المكية والمدنية)
+   - Names and meanings of prominent Surahs
+   - Context of revelation (أسباب النزول) when relevant
+   - Memorization (حفظ) techniques and tips
+
+3. Tajweed Rules (أحكام التجويد) — Complete mastery:
+   - Noon Sakinah & Tanween: Idhar (6 throat letters), Idgham (with/without Ghunna), Iqlab (ب), Ikhfa (15 letters)
+   - Meem Sakinah: Ikhfa Shafawi (ب), Idgham Shafawi (م), Idhar Shafawi (rest)
+   - Madd types: Tabii (2), Munfasil (4-5), Muttasil (4-5, obligatory), Lazim (6), Aarid Lissukoon (2/4/6)
+   - Ghunna (nasalization ~2 beats) in Noon/Meem Mushaddad + Ikhfa/Iqlab cases
+   - Qalqalah: 5 letters (قطب جد), minor vs major levels
+   - Tafkhim (heavy) vs Tarqiq (light): always-heavy letters, Ra & Lam rules
+   - Waqf (pause) rules and Ibtida (resumption)
+   - Lahn (errors): Jali (major) vs Khafi (minor)
+
+4. Islamic Studies (الدراسات الإسلامية):
+   - Basic Fiqh concepts related to recitation and Salah
+   - Famous Qurra (reciters) and the 10 Qira'at (القراءات العشر)
+   - Tajweed schools and prominent scholars
+
+════ DOCUMENT ANALYSIS ════
+If a student uploads a document/worksheet, analyze it carefully, explain its content,
+identify any Arabic text or Tajweed examples, and answer questions about it precisely.
+
+════ RESPONSE STYLE ════
+- Use numbered/bulleted lists when explaining rules — clarity over brevity.
+- Include Arabic terms with transliteration for non-Arabic speakers.
+- Be encouraging, patient, and pedagogically sound.
+- For complex rules, give practical examples from the Quran.
+- Always cite which rule/category you are explaining.
+
+════ KNOWLEDGE BASE ════
+${context}${docSection}
 `.trim();
 
   const reply = await callAI(systemPrompt, history, userMessage);

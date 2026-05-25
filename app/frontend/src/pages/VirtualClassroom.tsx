@@ -250,8 +250,28 @@ export default function VirtualClassroom() {
       roomName,
       parentNode: jitsiContainerRef.current,
       userInfo: { displayName },
-      configOverwrite:          { startWithAudioMuted: true, startWithVideoMuted: true },
-      interfaceConfigOverwrite: { SHOW_JITSI_WATERMARK: false, SHOW_WATERMARK_FOR_GUESTS: false },
+      configOverwrite: {
+        startWithAudioMuted: true,
+        startWithVideoMuted: true,
+        toolbarButtons: [
+          'microphone', 'camera', 'closedcaptions', 'desktop', 'fullscreen',
+          'fodeviceselection', 'hangup', 'chat', 'recording',
+          'livestreaming', 'etherpad', 'sharedvideo', 'shareaudio',
+          'settings', 'raisehand', 'videoquality', 'filmstrip',
+          'invite', 'feedback', 'stats', 'shortcuts',
+          'tileview', 'select-background', 'download', 'help',
+          'mute-everyone', 'security',
+        ],
+        fileRecordingsEnabled: true,
+        localRecording: { enabled: true },
+      },
+      interfaceConfigOverwrite: {
+        SHOW_JITSI_WATERMARK: false,
+        SHOW_WATERMARK_FOR_GUESTS: false,
+        TOOLBAR_ALWAYS_VISIBLE: false,
+        DISABLE_JOIN_LEAVE_NOTIFICATIONS: false,
+        SHOW_CHROME_EXTENSION_BANNER: false,
+      },
     });
 
     return () => api.dispose();

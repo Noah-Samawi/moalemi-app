@@ -6,7 +6,7 @@ import {
   type ChatMessage,
 } from "@/services/aiService";
 import { useAuth } from "@/context/AuthContext";
-import { Send, Bot, User, Loader, Sparkles, Trash2, RotateCcw } from "lucide-react";
+import { Send, Bot, User, Loader, Sparkles, Trash2, Paperclip, X, FileText } from "lucide-react";
 
 // ── Predefined starter prompts for quick exploration ──
 const STARTER_PROMPTS = [
@@ -25,9 +25,14 @@ export default function AiAssistant() {
   const [input,    setInput]    = useState("");
   const [loading,  setLoading]  = useState(false);
   const [initLoad, setInitLoad] = useState(true);
+  // File upload state
+  const [attachedFile,    setAttachedFile]    = useState<File | null>(null);
+  const [attachedContent, setAttachedContent] = useState<string | null>(null);
+  const [fileLoading,     setFileLoading]     = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef       = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef   = useRef<HTMLInputElement>(null);
 
   // ── Load persisted history ──
   useEffect(() => {
@@ -49,16 +54,22 @@ export default function AiAssistant() {
 
     const userMsg: ChatMessage = {
       role: "user",
-      content: msg,
+      content: attachedFile
+        ? `📎 [${attachedFile.name}]\n\n${msg}`
+        : msg,
       timestamp: new Date().toISOString(),
     };
 
     setHistory((prev) => [...prev, userMsg]);
     setInput("");
     setLoading(true);
+    const docCtx = attachedContent ?? undefined;
+    // Clear attachment after send
+    setAttachedFile(null);
+    setAttachedContent(null);
 
     try {
-      const { reply } = await sendAiMessage(msg, history);
+      const { reply } = await sendAiMessage(msg, history, docCtx);
       const aiMsg: ChatMessage = {
         role: "assistant",
         content: reply,
@@ -66,7 +77,6 @@ export default function AiAssistant() {
       };
       const updated = [...history, userMsg, aiMsg];
       setHistory(updated);
-      // Persist in background — non-blocking
       if (user?.id) saveAiChatHistory(user.id, updated).catch(console.error);
     } catch (err) {
       const errMsg: ChatMessage = {
@@ -78,6 +88,30 @@ export default function AiAssistant() {
     } finally {
       setLoading(false);
       setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  };
+
+  // ── File attachment handler ──
+  const handleFileAttach = async (file?: File) => {
+    if (!file) return;
+    // Accept text, PDF (read as text), images
+    const allowed = ["text/plain", "application/pdf", "text/html", "text/csv"];
+    const isText = allowed.some((t) => file.type.startsWith(t)) || file.name.endsWith(".txt") || file.name.endsWith(".md");
+    setFileLoading(true);
+    try {
+      if (isText || file.type === "application/pdf") {
+        const text = await file.text();
+        setAttachedContent(text);
+      } else {
+        // For images: pass a note that an image was attached
+        setAttachedContent(`[Image file: ${file.name} — ${(file.size / 1024).toFixed(1)} KB]`);
+      }
+      setAttachedFile(file);
+    } catch {
+      setAttachedContent(`[File: ${file.name}]`);
+      setAttachedFile(file);
+    } finally {
+      setFileLoading(false);
     }
   };
 
@@ -216,10 +250,42 @@ export default function AiAssistant() {
 
       {/* ── Input area ── */}
       <div className="border-t border-gray-100 px-4 py-4 bg-white">
+        {/* Attachment preview */}
+        {attachedFile && (
+          <div className="flex items-center gap-2 mb-2 px-3 py-2 bg-[#2F7A5B]/8 border border-[#2F7A5B]/20 rounded-xl">
+            <FileText className="w-4 h-4 text-[#2F7A5B] flex-shrink-0" />
+            <span className="text-xs text-[#2F7A5B] font-medium flex-1 truncate">{attachedFile.name}</span>
+            <button
+              type="button"
+              onClick={() => { setAttachedFile(null); setAttachedContent(null); }}
+              className="text-gray-400 hover:text-red-500 transition-colors"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
         <form
           onSubmit={(e) => { e.preventDefault(); handleSend(); }}
           className="flex items-end gap-2"
         >
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".txt,.md,.pdf,.csv,.html,text/*,image/*"
+            className="hidden"
+            onChange={(e) => handleFileAttach(e.target.files?.[0])}
+          />
+          {/* Attach button */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={loading || fileLoading}
+            className="flex-shrink-0 w-10 h-10 flex items-center justify-center text-gray-400 hover:text-[#2F7A5B] hover:bg-[#2F7A5B]/8 rounded-xl transition-all duration-200 disabled:opacity-40"
+            title="Datei anhängen (PDF, TXT, Bild)"
+          >
+            {fileLoading ? <Loader className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
+          </button>
           <div className="flex-1 relative">
             <textarea
               ref={inputRef}
@@ -256,7 +322,7 @@ export default function AiAssistant() {
           </button>
         </form>
         <p className="text-xs text-gray-400 text-center mt-2">
-          Enter zum Senden · Shift+Enter für Zeilenumbruch
+          Enter zum Senden · Shift+Enter für Zeilenumbruch · 📎 Datei anhängen
         </p>
       </div>
     </div>

@@ -1,13 +1,15 @@
-import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/organisms/Navbar";
 import HeroSection from "@/components/organisms/HeroSection";
 import FeaturedTeachersGrid from "@/components/organisms/FeaturedTeachersGrid";
 import FeatureItem from "@/components/molecules/FeatureItem";
+import AuthModal from "@/components/organisms/AuthModal";
 import { features } from "@/data/mockData";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { getLatestContentByType } from "@/services/contentService";
-import { Sparkles, BookOpen, MessageCircle, Star, ArrowRight } from "lucide-react";
+import { sendAiMessage, type ChatMessage } from "@/services/aiService";
+import { Sparkles, BookOpen, MessageCircle, Star, ArrowRight, Send, Loader, Bot } from "lucide-react";
 
 export default function Index() {
   const { t, lang } = useLanguage();
@@ -18,6 +20,13 @@ export default function Index() {
   const [advertisingBody, setAdvertisingBody] = useState("");
   const [extraFeatureTitle, setExtraFeatureTitle] = useState("");
   const [extraFeatureBody, setExtraFeatureBody] = useState("");
+  // Auth modal (for AI CTA)
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  // Homepage mini-chat state
+  const [chatInput,    setChatInput]    = useState("");
+  const [chatHistory,  setChatHistory]  = useState<ChatMessage[]>([]);
+  const [chatLoading,  setChatLoading]  = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   const handleJoinAsTeacher = () => {
     setShowTeacherToast(true);
@@ -54,6 +63,28 @@ export default function Index() {
       cancelled = true;
     };
   }, [lang]);
+
+  // Mini-chat auto-scroll
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatHistory, chatLoading]);
+
+  const handleMiniChatSend = async () => {
+    const msg = chatInput.trim();
+    if (!msg || chatLoading) return;
+    const userMsg: ChatMessage = { role: "user", content: msg, timestamp: new Date().toISOString() };
+    setChatHistory((prev) => [...prev, userMsg]);
+    setChatInput("");
+    setChatLoading(true);
+    try {
+      const { reply } = await sendAiMessage(msg, chatHistory);
+      setChatHistory((prev) => [...prev, { role: "assistant", content: reply, timestamp: new Date().toISOString() }]);
+    } catch {
+      setChatHistory((prev) => [...prev, { role: "assistant", content: "Entschuldigung, ein Fehler ist aufgetreten.", timestamp: new Date().toISOString() }]);
+    } finally {
+      setChatLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -143,8 +174,8 @@ export default function Index() {
               </ul>
 
               {/* CTA */}
-              <Link
-                to="/login"
+              <button
+                onClick={() => setAuthModalOpen(true)}
                 className="group inline-flex items-center gap-2 px-7 py-3.5 bg-gradient-to-r from-[#2F7A5B] to-[#3a8b6a] text-white font-bold text-sm rounded-2xl hover:from-[#3a8b6a] hover:to-[#4a9b7a] transition-all duration-300 shadow-lg shadow-[#2F7A5B]/25 hover:shadow-[#2F7A5B]/40 hover:-translate-y-0.5"
               >
                 <Sparkles className="w-4 h-4" />
@@ -154,16 +185,16 @@ export default function Index() {
                   ? "Try AI Assistant Now"
                   : "Jetzt KI-Assistenten testen"}
                 <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
-              </Link>
+              </button>
             </div>
 
-            {/* Right: Chat preview mock */}
+            {/* Right: Live interactive mini-chat */}
             <div className="relative">
               {/* Glow */}
               <div className="absolute -inset-4 bg-[#2F7A5B]/10 rounded-3xl blur-2xl" />
-              <div className="relative bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+              <div className="relative bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden flex flex-col" style={{ minHeight: 340 }}>
                 {/* Chat header */}
-                <div className="flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-[#1A1A2E] to-[#0f2d1f]">
+                <div className="flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-[#1A1A2E] to-[#0f2d1f] flex-shrink-0">
                   <div className="w-9 h-9 rounded-full bg-[#2F7A5B] flex items-center justify-center">
                     <Sparkles className="w-5 h-5 text-white" />
                   </div>
@@ -175,50 +206,61 @@ export default function Index() {
                       {lang === "ar" ? "متخصص في التجويد والعربية" : lang === "en" ? "Tajweed & Arabic specialist" : "Tajweed & Arabisch Spezialist"}
                     </p>
                   </div>
-                  <div className="ml-auto w-2 h-2 rounded-full bg-[#22c55e] shadow-sm shadow-[#22c55e]" />
+                  <div className="ml-auto w-2 h-2 rounded-full bg-[#22c55e] shadow-sm" />
                 </div>
+
                 {/* Messages */}
-                <div className="p-5 space-y-4 bg-[#FAFAFA]">
-                  {/* User bubble */}
-                  <div className="flex justify-end">
-                    <div className="max-w-[80%] bg-[#2F7A5B] text-white text-sm rounded-2xl rounded-br-sm px-4 py-2.5 shadow-sm">
-                      {lang === "ar"
-                        ? "ما هي أحكام النون الساكنة؟"
-                        : lang === "en"
-                        ? "What are the rules of Noon Sakinah?"
-                        : "Was sind die Regeln von Noon Sakinah?"}
+                <div className="flex-1 p-4 space-y-3 bg-[#FAFAFA] overflow-y-auto" style={{ maxHeight: 220 }}>
+                  {chatHistory.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full py-4 text-center text-gray-400">
+                      <Bot className="w-8 h-8 text-gray-200 mb-2" />
+                      <p className="text-xs">
+                        {lang === "ar" ? "اسألني عن التجويد أو العربية..." : lang === "en" ? "Ask me about Tajweed or Arabic..." : "Frag mich über Tajweed oder Arabisch..."}
+                      </p>
                     </div>
-                  </div>
-                  {/* Bot bubble */}
-                  <div className="flex justify-start gap-2">
-                    <div className="w-7 h-7 rounded-full bg-[#1A1A2E] flex items-center justify-center flex-shrink-0 mt-auto">
-                      <Sparkles className="w-3.5 h-3.5 text-[#DCA842]" />
+                  ) : (
+                    chatHistory.map((msg, i) => (
+                      <div key={i} className={`flex gap-2 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+                        <div className={`max-w-[82%] text-xs rounded-2xl px-3 py-2 leading-relaxed shadow-sm ${
+                          msg.role === "user"
+                            ? "bg-[#2F7A5B] text-white rounded-br-sm"
+                            : "bg-white border border-gray-100 text-gray-700 rounded-bl-sm"
+                        }`}>
+                          {msg.content}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  {chatLoading && (
+                    <div className="flex gap-2">
+                      <div className="bg-white border border-gray-100 rounded-2xl rounded-bl-sm px-3 py-2">
+                        <div className="flex gap-1 items-center">
+                          {[0,1,2].map(i => <span key={i} className="w-1.5 h-1.5 bg-[#2F7A5B]/40 rounded-full animate-bounce" style={{ animationDelay: `${i*0.15}s` }} />)}
+                        </div>
+                      </div>
                     </div>
-                    <div className="max-w-[80%] bg-white border border-gray-100 text-gray-700 text-sm rounded-2xl rounded-bl-sm px-4 py-2.5 shadow-sm leading-relaxed">
-                      {lang === "ar"
-                        ? "للنون الساكنة والتنوين ٤ أحكام: الإظهار، الإدغام، الإقلاب، والإخفاء. أيها تريد أن نبدأ به؟ 📖"
-                        : lang === "en"
-                        ? "Noon Sakinah has 4 rules: Idh-haar, Idghaam, Iqlaab, and Ikhfaa. Which would you like to explore first? 📖"
-                        : "Noon Sakinah hat 4 Regeln: Idh-haar, Idghaam, Iqlaab und Ikhfaa. Welche möchtest du zuerst erkunden? 📖"}
-                    </div>
-                  </div>
+                  )}
+                  <div ref={chatEndRef} />
                 </div>
+
                 {/* Input bar */}
-                <div className="px-5 py-4 border-t border-gray-100 bg-white flex items-center gap-3">
+                <div className="px-4 py-3 border-t border-gray-100 bg-white flex items-center gap-2 flex-shrink-0">
                   <input
-                    readOnly
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleMiniChatSend(); }}
                     placeholder={
-                      lang === "ar"
-                        ? "اسأل سؤالاً عن التجويد..."
-                        : lang === "en"
-                        ? "Ask about Tajweed..."
-                        : "Frag über Tajweed..."
+                      lang === "ar" ? "اسأل سؤالاً عن التجويد..." : lang === "en" ? "Ask about Tajweed..." : "Frag über Tajweed..."
                     }
-                    className="flex-1 text-sm text-gray-400 bg-gray-50 rounded-xl px-4 py-2.5 border border-gray-100 outline-none cursor-pointer"
-                    onClick={() => {}}
+                    disabled={chatLoading}
+                    className="flex-1 text-sm bg-gray-50 rounded-xl px-4 py-2.5 border border-gray-100 outline-none focus:border-[#2F7A5B] focus:ring-1 focus:ring-[#2F7A5B]/20 transition-all disabled:opacity-60"
                   />
-                  <button className="w-9 h-9 rounded-xl bg-[#2F7A5B] flex items-center justify-center shadow-sm flex-shrink-0">
-                    <ArrowRight className="w-4 h-4 text-white" />
+                  <button
+                    onClick={handleMiniChatSend}
+                    disabled={!chatInput.trim() || chatLoading}
+                    className="w-9 h-9 rounded-xl bg-[#2F7A5B] flex items-center justify-center shadow-sm flex-shrink-0 disabled:opacity-40 hover:bg-[#3a8b6a] transition-colors"
+                  >
+                    {chatLoading ? <Loader className="w-4 h-4 text-white animate-spin" /> : <Send className="w-4 h-4 text-white" />}
                   </button>
                 </div>
               </div>
@@ -310,6 +352,13 @@ export default function Index() {
           . {t("footer.rights")}
         </p>
       </footer>
+
+      {/* Auth Modal — triggered by AI CTA */}
+      <AuthModal
+        open={authModalOpen}
+        onOpenChange={setAuthModalOpen}
+        onAuthSuccess={() => setAuthModalOpen(false)}
+      />
     </div>
   );
 }

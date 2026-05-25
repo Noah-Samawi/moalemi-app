@@ -26,22 +26,14 @@ export interface BookingData {
   totalPrice: number;
 }
 
-function generateTimeOptions(lang: string): { value: string; label: string }[] {
+function generateTimeOptions(_lang: string): { value: string; label: string }[] {
   const options: { value: string; label: string }[] = [];
   for (let hour = 8; hour <= 22; hour++) {
-    for (let min = 0; min < 60; min += 30) {
+    for (let min = 0; min < 60; min += 10) {
+      // Skip 22:10, 22:20, ... — cap at 22:00
+      if (hour === 22 && min > 0) break;
       const h24 = `${hour.toString().padStart(2, "0")}:${min.toString().padStart(2, "0")}`;
-      if (lang === "ar") {
-        const period = hour < 12 ? "ص" : "م";
-        const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-        const label = `${displayHour}:${min.toString().padStart(2, "0")} ${period}`;
-        options.push({ value: h24, label });
-      } else {
-        const period = hour < 12 ? "AM" : "PM";
-        const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-        const label = `${displayHour}:${min.toString().padStart(2, "0")} ${period}`;
-        options.push({ value: h24, label });
-      }
+      options.push({ value: h24, label: h24 });
     }
   }
   return options;
