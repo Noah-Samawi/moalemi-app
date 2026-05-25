@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import Navbar from "@/components/organisms/Navbar";
 import HeroSection from "@/components/organisms/HeroSection";
 import FeaturedTeachersGrid from "@/components/organisms/FeaturedTeachersGrid";
@@ -7,6 +7,7 @@ import FeatureItem from "@/components/molecules/FeatureItem";
 import { features } from "@/data/mockData";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { getLatestContentByType } from "@/services/contentService";
+import { Sparkles, BookOpen, MessageCircle, Star, ArrowRight } from "lucide-react";
 
 export default function Index() {
   const { t, lang } = useLanguage();
@@ -91,6 +92,141 @@ export default function Index() {
 
       <FeaturedTeachersGrid />
 
+      {/* ── AI Study Assistant Promo Section ── */}
+      <section className="py-20 bg-gradient-to-br from-[#F7F9F7] to-[#EEF6F1]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Left: Text */}
+            <div className="space-y-6">
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#2F7A5B]/10 border border-[#2F7A5B]/20 text-[#2F7A5B] text-sm font-semibold">
+                <Sparkles className="w-4 h-4" />
+                {lang === "ar" ? "جديد" : lang === "en" ? "New" : "Neu"}
+              </span>
+              <h2 className="text-4xl font-bold text-[#1A1A2E] leading-tight">
+                {lang === "ar"
+                  ? "مساعد الذكاء الاصطناعي للتجويد والعربية"
+                  : lang === "en"
+                  ? "AI Assistant for Tajweed & Arabic"
+                  : "KI-Assistent für Tajweed & Arabisch"}
+              </h2>
+              <p className="text-lg text-gray-600 leading-relaxed">
+                {lang === "ar"
+                  ? "احصل على إجابات فورية عن قواعد التجويد، والحروف العربية، وأحكام النون الساكنة والمدود — في أي وقت، بدون انتظار."
+                  : lang === "en"
+                  ? "Get instant answers about Tajweed rules, the Arabic alphabet, Noon Sakinah, Madd types, and more — anytime, no waiting."
+                  : "Erhalte sofortige Antworten zu Tajweed-Regeln, dem arabischen Alphabet, Noon Sakinah, Madd-Typen und mehr — jederzeit, ohne Wartezeit."}
+              </p>
+
+              {/* Feature bullets */}
+              <ul className="space-y-3">
+                {[
+                  {
+                    icon: <BookOpen className="w-4 h-4 text-[#2F7A5B]" />,
+                    text: lang === "ar" ? "قواعد التجويد الكاملة في ثوانٍ" : lang === "en" ? "Full Tajweed rules in seconds" : "Vollständige Tajweed-Regeln in Sekunden",
+                  },
+                  {
+                    icon: <MessageCircle className="w-4 h-4 text-[#2F7A5B]" />,
+                    text: lang === "ar" ? "دردشة تفاعلية بالعربية والإنجليزية والألمانية" : lang === "en" ? "Chat in Arabic, English & German" : "Chat auf Arabisch, Englisch & Deutsch",
+                  },
+                  {
+                    icon: <Star className="w-4 h-4 text-[#DCA842]" />,
+                    text: lang === "ar" ? "معرفة مُدرَّبة خصيصاً على المنهج الإسلامي" : lang === "en" ? "Knowledge trained specifically on Islamic curriculum" : "Wissen speziell auf islamisches Lehrprogramm trainiert",
+                  },
+                ].map((item, i) => (
+                  <li key={i} className="flex items-start gap-3">
+                    <span className="mt-0.5 w-7 h-7 rounded-full bg-white flex items-center justify-center shadow-sm flex-shrink-0">
+                      {item.icon}
+                    </span>
+                    <span className="text-gray-700 text-sm leading-relaxed">{item.text}</span>
+                  </li>
+                ))}
+              </ul>
+
+              {/* CTA */}
+              <Link
+                to="/login"
+                className="group inline-flex items-center gap-2 px-7 py-3.5 bg-gradient-to-r from-[#2F7A5B] to-[#3a8b6a] text-white font-bold text-sm rounded-2xl hover:from-[#3a8b6a] hover:to-[#4a9b7a] transition-all duration-300 shadow-lg shadow-[#2F7A5B]/25 hover:shadow-[#2F7A5B]/40 hover:-translate-y-0.5"
+              >
+                <Sparkles className="w-4 h-4" />
+                {lang === "ar"
+                  ? "جرّب المساعد الذكي الآن"
+                  : lang === "en"
+                  ? "Try AI Assistant Now"
+                  : "Jetzt KI-Assistenten testen"}
+                <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+              </Link>
+            </div>
+
+            {/* Right: Chat preview mock */}
+            <div className="relative">
+              {/* Glow */}
+              <div className="absolute -inset-4 bg-[#2F7A5B]/10 rounded-3xl blur-2xl" />
+              <div className="relative bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+                {/* Chat header */}
+                <div className="flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-[#1A1A2E] to-[#0f2d1f]">
+                  <div className="w-9 h-9 rounded-full bg-[#2F7A5B] flex items-center justify-center">
+                    <Sparkles className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-white text-sm font-semibold">
+                      {lang === "ar" ? "المساعد الذكي" : lang === "en" ? "AI Assistant" : "KI-Assistent"}
+                    </p>
+                    <p className="text-[#2F7A5B] text-xs">
+                      {lang === "ar" ? "متخصص في التجويد والعربية" : lang === "en" ? "Tajweed & Arabic specialist" : "Tajweed & Arabisch Spezialist"}
+                    </p>
+                  </div>
+                  <div className="ml-auto w-2 h-2 rounded-full bg-[#22c55e] shadow-sm shadow-[#22c55e]" />
+                </div>
+                {/* Messages */}
+                <div className="p-5 space-y-4 bg-[#FAFAFA]">
+                  {/* User bubble */}
+                  <div className="flex justify-end">
+                    <div className="max-w-[80%] bg-[#2F7A5B] text-white text-sm rounded-2xl rounded-br-sm px-4 py-2.5 shadow-sm">
+                      {lang === "ar"
+                        ? "ما هي أحكام النون الساكنة؟"
+                        : lang === "en"
+                        ? "What are the rules of Noon Sakinah?"
+                        : "Was sind die Regeln von Noon Sakinah?"}
+                    </div>
+                  </div>
+                  {/* Bot bubble */}
+                  <div className="flex justify-start gap-2">
+                    <div className="w-7 h-7 rounded-full bg-[#1A1A2E] flex items-center justify-center flex-shrink-0 mt-auto">
+                      <Sparkles className="w-3.5 h-3.5 text-[#DCA842]" />
+                    </div>
+                    <div className="max-w-[80%] bg-white border border-gray-100 text-gray-700 text-sm rounded-2xl rounded-bl-sm px-4 py-2.5 shadow-sm leading-relaxed">
+                      {lang === "ar"
+                        ? "للنون الساكنة والتنوين ٤ أحكام: الإظهار، الإدغام، الإقلاب، والإخفاء. أيها تريد أن نبدأ به؟ 📖"
+                        : lang === "en"
+                        ? "Noon Sakinah has 4 rules: Idh-haar, Idghaam, Iqlaab, and Ikhfaa. Which would you like to explore first? 📖"
+                        : "Noon Sakinah hat 4 Regeln: Idh-haar, Idghaam, Iqlaab und Ikhfaa. Welche möchtest du zuerst erkunden? 📖"}
+                    </div>
+                  </div>
+                </div>
+                {/* Input bar */}
+                <div className="px-5 py-4 border-t border-gray-100 bg-white flex items-center gap-3">
+                  <input
+                    readOnly
+                    placeholder={
+                      lang === "ar"
+                        ? "اسأل سؤالاً عن التجويد..."
+                        : lang === "en"
+                        ? "Ask about Tajweed..."
+                        : "Frag über Tajweed..."
+                    }
+                    className="flex-1 text-sm text-gray-400 bg-gray-50 rounded-xl px-4 py-2.5 border border-gray-100 outline-none cursor-pointer"
+                    onClick={() => {}}
+                  />
+                  <button className="w-9 h-9 rounded-xl bg-[#2F7A5B] flex items-center justify-center shadow-sm flex-shrink-0">
+                    <ArrowRight className="w-4 h-4 text-white" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── Premium Hero CTA ── */}
       <section className="relative py-24 overflow-hidden">
         {/* Background */}
@@ -117,7 +253,7 @@ export default function Index() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/teachers")}
               className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-[#2F7A5B] to-[#3a8b6a] text-white font-bold text-base rounded-2xl hover:from-[#3a8b6a] hover:to-[#4a9b7a] transition-all duration-300 shadow-xl shadow-[#2F7A5B]/30 hover:shadow-[#2F7A5B]/50 hover:-translate-y-0.5"
             >
               {lang === "ar" ? "تصفح المعلمين" : lang === "en" ? "Browse Teachers" : "Lehrer entdecken"}

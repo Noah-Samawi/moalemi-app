@@ -292,35 +292,47 @@ export default function TeacherOnboarding() {
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("onboarding.bioAr")}</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  اكتب نبذة تعريفية عنك
+                  <span className="text-red-500 ml-1">*</span>
+                </label>
                 <textarea
                   value={form.bioAr}
                   onChange={(e) => handleChange("bioAr", e.target.value)}
-                  rows={3}
+                  rows={5}
                   dir="rtl"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B] focus:border-transparent resize-none"
+                  placeholder="اكتب نبذة عنك لا تقل عن ٢٠ كلمة تشرح فيها خبرتك، أسلوبك في التدريس، وكيف تساعد الطلاب على تحقيق أهدافهم..."
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B]/40 focus:border-[#2F7A5B] resize-none transition-all"
                   required
                   disabled={submitting}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("onboarding.bioEn")}</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  Write a brief introduction about yourself
+                  <span className="text-red-500 ml-1">*</span>
+                </label>
                 <textarea
                   value={form.bioEn}
                   onChange={(e) => handleChange("bioEn", e.target.value)}
-                  rows={3}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B] focus:border-transparent resize-none"
+                  rows={5}
+                  placeholder="Write at least 20 words describing your teaching experience, methods, and how you can help students succeed..."
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B]/40 focus:border-[#2F7A5B] resize-none transition-all"
                   required
                   disabled={submitting}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("onboarding.bioDe")}</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  Schreiben Sie eine kurze Biografie über sich
+                  <span className="text-red-500 ml-1">*</span>
+                </label>
                 <textarea
                   value={form.bioDe}
                   onChange={(e) => handleChange("bioDe", e.target.value)}
-                  rows={3}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B] focus:border-transparent resize-none"
+                  rows={5}
+                  placeholder="Schreiben Sie mindestens 20 Wörter über Ihre Unterrichtserfahrung, Ihre Methoden und wie Sie Schülern zum Erfolg verhelfen..."
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F7A5B]/40 focus:border-[#2F7A5B] resize-none transition-all"
                   required
                   disabled={submitting}
                 />

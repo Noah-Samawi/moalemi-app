@@ -68,7 +68,13 @@ export default function TeacherProfile() {
   return (
     <div className="min-h-screen bg-[#FDF8F0]">
       <Navbar />
-      <TeacherProfileBooking teacher={teacher} />
+      <TeacherProfileBooking
+        teacher={teacher}
+        onReviewSubmitted={async () => {
+          const refreshed = await getTeacherById(id ?? "").catch(() => null);
+          if (refreshed) setTeacher(refreshed);
+        }}
+      />
     </div>
   );
 }
