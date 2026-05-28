@@ -13,6 +13,7 @@ import { getChannelByBookingId } from "@/services/channelService";
 import {
   BookOpen, History, Settings, Video, Clock, CheckCircle,
   Calendar, Users, ArrowRight, User, Bell, MessageCircle, Save,
+  Sparkles,
 } from "lucide-react";
 
 // ── Upcoming = pending / scheduled / confirmed; History = completed / cancelled ──
@@ -442,7 +443,17 @@ export default function Dashboard() {
           {activeTab === "settings" ? (
             renderSettings()
           ) : activeTab === "ai-assistant" ? (
-            <AiAssistant />
+            user ? <AiAssistant /> : (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="w-16 h-16 rounded-full bg-[#2F7A5B]/10 flex items-center justify-center mb-4">
+                  <Sparkles className="w-8 h-8 text-[#2F7A5B]" />
+                </div>
+                <h2 className="text-xl font-bold text-[#1A1A2E] mb-2">KI-Assistent</h2>
+                <p className="text-gray-500 text-sm max-w-xs">
+                  Melde dich an, um den KI-Assistenten für Arabisch, Quran und Tajweed zu nutzen.
+                </p>
+              </div>
+            )
           ) : activeTab === "ai-knowledge" ? (
             <AdminKnowledgeBase />
           ) : (

@@ -245,23 +245,28 @@ export default function Index() {
 
                 {/* Input bar */}
                 <div className="px-4 py-3 border-t border-gray-100 bg-white flex items-center gap-2 flex-shrink-0">
-                  <input
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") handleMiniChatSend(); }}
-                    placeholder={
-                      lang === "ar" ? "اسأل سؤالاً عن التجويد..." : lang === "en" ? "Ask about Tajweed..." : "Frag über Tajweed..."
-                    }
-                    disabled={chatLoading}
-                    className="flex-1 text-sm bg-gray-50 rounded-xl px-4 py-2.5 border border-gray-100 outline-none focus:border-[#2F7A5B] focus:ring-1 focus:ring-[#2F7A5B]/20 transition-all disabled:opacity-60"
-                  />
-                  <button
-                    onClick={handleMiniChatSend}
-                    disabled={!chatInput.trim() || chatLoading}
-                    className="w-9 h-9 rounded-xl bg-[#2F7A5B] flex items-center justify-center shadow-sm flex-shrink-0 disabled:opacity-40 hover:bg-[#3a8b6a] transition-colors"
+                  <form
+                    onSubmit={(e) => { e.preventDefault(); handleMiniChatSend(); }}
+                    className="flex items-center gap-2 w-full"
                   >
-                    {chatLoading ? <Loader className="w-4 h-4 text-white animate-spin" /> : <Send className="w-4 h-4 text-white" />}
-                  </button>
+                    <input
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleMiniChatSend(); } }}
+                      placeholder={
+                        lang === "ar" ? "اسأل سؤالاً عن التجويد..." : lang === "en" ? "Ask about Tajweed..." : "Frag über Tajweed..."
+                      }
+                      disabled={chatLoading}
+                      className="flex-1 text-sm bg-gray-50 rounded-xl px-4 py-2.5 border border-gray-100 outline-none focus:border-[#2F7A5B] focus:ring-1 focus:ring-[#2F7A5B]/20 transition-all disabled:opacity-60"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!chatInput.trim() || chatLoading}
+                      className="flex-shrink-0 w-9 h-9 rounded-xl bg-[#2F7A5B] flex items-center justify-center shadow-sm hover:bg-[#3a8b6a] transition-colors disabled:opacity-40"
+                    >
+                      {chatLoading ? <Loader className="w-4 h-4 text-white animate-spin" /> : <Send className="w-4 h-4 text-white" />}
+                    </button>
+                  </form>
                 </div>
               </div>
             </div>
